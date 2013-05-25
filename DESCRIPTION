@@ -1,0 +1,12 @@
+Package: kali
+Type: Package
+Title: Tools for habitat and niche modeling.
+Version: 1.2
+Date: 2013-05-22
+Author: Ricardo Oliveros-Ramos
+Maintainer: Ricardo Oliveros-Ramos <ricardo.oliveros@gmail.com>
+Description: Tools for habitat and niche modeling and running BIOMOD models using netCDF data.
+License: GLP-2
+Depends: fields, maps, ncdf, akima, PresenceAbsence
+Suggests: mapdata
+ByteCompile: TRUE
