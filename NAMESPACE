@@ -1,3 +1,5 @@
 exportPattern("^[[:alpha:]]+")
 export(.rotate)
+export(.sub)
+export(.getBestModel)
 import(fields, maps)
