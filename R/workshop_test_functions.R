@@ -97,12 +97,18 @@ mapDetails = function(center, hires=FALSE, col="black", interior=FALSE,
 }
 
 
-image.map2 = function(lon, lat, z, center=0, hires=FALSE, add = FALSE, nlevel=1000, 
+.image.mapnl = function(lon, lat, z, center=0, hires=FALSE, add = FALSE, nlevel=1000, 
                       col = rev(rainbow(nlevel/10, start = 0/6, end = 4/6)),
                       land.col="darkolivegreen4", sea.col="aliceblue", boundaries.col = "black", 
-                      grid.col="white", grid=FALSE, axes=TRUE, border=!axes) {
+                      grid.col="white", grid=FALSE, axes=TRUE, border=!axes, ...) {
   
-  image(x=lon, y=lat, z=z, col=col, axes=FALSE, add=add)
+  lonData = .checkLongitude(lon)
+  if(!is.null(lonData$ind)) {
+    z = z[lonData$ind, ]
+    lon = lonData$lon
+  }
+  
+  image(x=lon, y=lat, z=z, col=col, axes=FALSE, add=add, xlab="", ylab="", ...)
   
   mapDetails(center=center, hires=hires,col=land.col, interior=FALSE, 
              axes=axes, border=border, boundaries.col=boundaries.col,
@@ -110,32 +116,52 @@ image.map2 = function(lon, lat, z, center=0, hires=FALSE, add = FALSE, nlevel=10
   return(invisible())
 }
 
+.checkLongitude = function(lon, ...) {
+  if(is.matrix(lon)) return(list(lon=lon))
+  if(!any(lon>180)) return(list(lon=lon))
+  lon[lon>180] = lon[lon>180] - 360
+  xlon = sort(lon, index.return = TRUE)
+  return(list(lon=xlon$x, ind=xlon$ix))
+}
 
-image.map = function (lon, lat, z, center=0, hires=FALSE, add = FALSE, nlevel = 1000, horizontal = FALSE, 
-                      legend.shrink = 0.9, legend.width = 1.2, legend.mar = ifelse(horizontal, 
-                                                                                   3.1, 5.1), legend.lab = NULL, graphics.reset = FALSE, 
-                      bigplot = NULL, smallplot = NULL, legend.only = FALSE, col = rev(rainbow(nlevel/10, 
-                                                                                               start = 0/6, end = 4/6)), 
+image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FALSE, nlevel = 1000, horizontal = FALSE, 
+                      legend.shrink = 0.9, legend.width = 1.2, 
+                      legend.mar = ifelse(horizontal, 3.1, 5.1), legend.lab = NULL, graphics.reset = FALSE, 
+                      bigplot = NULL, smallplot = NULL, legend.only = FALSE, 
+                      col = rev(rainbow(nlevel/10, start = 0/6, end = 4/6)), 
                       lab.breaks = NULL, axis.args = NULL, legend.args = NULL, axes=TRUE,
                       midpoint = FALSE, border = NA, lwd = 1, land.col="black",
                       sea.col="white", boundaries.col="grey", grid=FALSE, grid.col="white", ...) 
 {
-  old.par <- par(no.readonly = TRUE)
-  info <- imageplot.info(x=lon, y=lat, z=z, ...)
+  lonData = .checkLongitude(lon)
+  if(!is.null(lonData$ind)) {
+    z = z[lonData$ind, ]
+    lon = lonData$lon
+  }
+  
+  if(!isTRUE(legend)) {
+    .image.mapnl(lon=lon, lat=lat, z=z, center=center, hires=hires, add=add, nlevel=nlevel, 
+                 col=col, land.col=land.col, sea.col=sea.col, boundaries.col=boundaries.col, 
+                 grid.col=grid.col, grid=grid, axes=axes, border=border, ...)
+    return(invisible())
+  }
+
+  old.par = par(no.readonly = TRUE)
+  info = imageplot.info(x=lon, y=lat, z=z, ...)
   if (add) {
-    big.plot <- old.par$plt
+    big.plot = old.par$plt
   }
   if (legend.only) {
-    graphics.reset <- TRUE
+    graphics.reset = TRUE
   }
   if (is.null(legend.mar)) {
-    legend.mar <- ifelse(horizontal, 3.1, 5.1)
+    legend.mar = ifelse(horizontal, 3.1, 5.1)
   }
-  temp <- imageplot.setup(add = add, legend.shrink = legend.shrink, 
+  temp = imageplot.setup(add = add, legend.shrink = legend.shrink, 
                           legend.width = legend.width, legend.mar = legend.mar, 
                           horizontal = horizontal, bigplot = bigplot, smallplot = smallplot)
-  smallplot <- temp$smallplot
-  bigplot <- temp$bigplot
+  smallplot = temp$smallplot
+  bigplot = temp$bigplot
   if (!legend.only) {
     if (!add) {
       par(plt = bigplot)
@@ -155,28 +181,28 @@ image.map = function (lon, lat, z, center=0, hires=FALSE, add = FALSE, nlevel = 
                  axes=axes, border=border, boundaries.col=boundaries.col,
                  grid=grid, grid.col=grid.col)  
     }
-    big.par <- par(no.readonly = TRUE)
+    big.par = par(no.readonly = TRUE)
   }
   if ((smallplot[2] < smallplot[1]) | (smallplot[4] < smallplot[3])) {
     par(old.par)
     stop("plot region too small to add legend\n")
   }
-  ix <- 1
-  minz <- info$zlim[1]
-  maxz <- info$zlim[2]
-  binwidth <- (maxz - minz)/nlevel
-  midpoints <- seq(minz + binwidth/2, maxz - binwidth/2, by = binwidth)
-  iy <- midpoints
-  iz <- matrix(iy, nrow = 1, ncol = length(iy))
-  breaks <- list(...)$breaks
+  ix = 1
+  minz = info$zlim[1]
+  maxz = info$zlim[2]
+  binwidth = (maxz - minz)/nlevel
+  midpoints = seq(minz + binwidth/2, maxz - binwidth/2, by = binwidth)
+  iy = midpoints
+  iz = matrix(iy, nrow = 1, ncol = length(iy))
+  breaks = list(...)$breaks
   par(new = TRUE, pty = "m", plt = smallplot, err = -1)
   if (!is.null(breaks) & !is.null(lab.breaks)) {
-    axis.args <- c(list(side = ifelse(horizontal, 1, 4), 
+    axis.args = c(list(side = ifelse(horizontal, 1, 4), 
                         mgp = c(3, 1, 0), las = ifelse(horizontal, 0, 2), 
                         at = breaks, labels = lab.breaks), axis.args)
   }
   else {
-    axis.args <- c(list(side = ifelse(horizontal, 1, 4), 
+    axis.args = c(list(side = ifelse(horizontal, 1, 4), 
                         mgp = c(3, 1, 0), las = ifelse(horizontal, 0, 2)), 
                    axis.args)
   }
@@ -203,13 +229,13 @@ image.map = function (lon, lat, z, center=0, hires=FALSE, add = FALSE, nlevel = 
   do.call("axis", axis.args)
   box()
   if (!is.null(legend.lab)) {
-    legend.args <- list(text = legend.lab, side = ifelse(horizontal, 
+    legend.args = list(text = legend.lab, side = ifelse(horizontal, 
                                                          1, 4), line = legend.mar - 2)
   }
   if (!is.null(legend.args)) {
     do.call(mtext, legend.args)
   }
-  mfg.save <- par()$mfg
+  mfg.save = par()$mfg
   if (graphics.reset | add) {
     par(old.par)
     par(mfg = mfg.save, new = FALSE)
@@ -460,7 +486,7 @@ table2grid = function(data, var, lat, lon, dx=dy, dy=dx, FUN=sum, ...) {
 }
 
 
-countMap = function(data, var, lat, lon, dx, dy=dx, ...) {
+countMap = function(data, var, lat, lon, dx=1, dy=dx, ...) {
   
   coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy)
   
@@ -604,28 +630,28 @@ map2data = function(z, x, y) {
 
 map2 =  function(database,center,...){
   # From stackoverflow
-  Obj <- map(database,...,plot=FALSE)
-  coord <- cbind(Obj[[1]],Obj[[2]])
+  Obj = map(database,...,plot=FALSE)
+  coord = cbind(Obj[[1]],Obj[[2]])
   
   # split up the coordinates
-  id <- rle(!is.na(coord[,1]))
-  id <- matrix(c(1,cumsum(id$lengths)),ncol=2,byrow=TRUE)
-  polygons <- apply(id, 1, function(i) {coord[i[1]:i[2],]} )
+  id = rle(!is.na(coord[,1]))
+  id = matrix(c(1,cumsum(id$lengths)),ncol=2,byrow=TRUE)
+  polygons = apply(id, 1, function(i) {coord[i[1]:i[2],]} )
   
   # split up polygons that differ too much
-  polygons <- lapply(polygons, function(x) {
-    x[,1] <- x[,1] + center
-    x[,1] <- ifelse(x[,1]>180,x[,1]-360,x[,1])
+  polygons = lapply(polygons, function(x) {
+    x[,1] = x[,1] + center
+    x[,1] = ifelse(x[,1]>180,x[,1]-360,x[,1])
     if(sum(diff(x[,1])>300,na.rm=T) >0){
-      id <- x[,1] < 0
-      x <- rbind(x[id,],c(NA,NA),x[!id,])
+      id = x[,1] < 0
+      x = rbind(x[id,],c(NA,NA),x[!id,])
     }
     return(x)
   })
   # reconstruct the object
-  polygons <- do.call(rbind,polygons)
-  Obj[[1]] <- polygons[,1]
-  Obj[[2]] <- polygons[,2]
+  polygons = do.call(rbind,polygons)
+  Obj[[1]] = polygons[,1]
+  Obj[[2]] = polygons[,2]
   
   map(Obj,...)
 }
@@ -724,11 +750,20 @@ ncdf2data = function(files, slices, control, var,
   return(base)
 }
 
+.makeNameNcdfVar = function(var, data) {
+  longname = data$var[[var]]$longname
+  units    = data$var[[var]]$units
+  output = paste0(sQuote(var), " (", longname, ", ", units, ")")
+  return(output)
+}
 
 extractData = function(files, data, lat, lon, start, end, 
                        dx, dy=dx, frequency=12, 
-                       dim.names = c("lat", "lon", "time")) {
+                       dim.names = c("lat", "lon", "time"),
+                       verbose=TRUE) {
   
+  
+  if(dim.names[1] %in% names(data))
   coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy)
   times  = createTimeAxis(start=start, end=end, frequency=frequency, center=TRUE)
   
@@ -744,29 +779,30 @@ extractData = function(files, data, lat, lon, start, end,
                   length(times$center))                  
   
   for(file in files) {
-    cat("Reading", file,"...\n")
+    if(isTRUE(verbose)) cat("Reading", file,"...\n")
     data1 = open.ncdf(file)
     for(var in names(data1$var)) {
       if(!identical(data1$var[[var]]$varsize, control.dim)) {
         if(identical(data1$var[[var]]$varsize, control.dim[1:2])) {
-          cat("Adding variable", var,"\n")
+          if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(var, data1),"\n")
           data[, var] = get.var.ncdf(data1, var)[ix2]  
         } else {
-          cat("Skipping variable", var,"\n")  
+          if(isTRUE(verbose)) cat("Skipping variable", sQuote(var),"(Dimensions do not match.)\n")  
           next  
         }
       } else {
-      cat("Adding variable", var,"\n")
+        if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(var, data1),"\n")
       data[, var] = get.var.ncdf(data1, var)[ix]
       }
     }
     close.ncdf(data1)
     gc(verbose=FALSE)
   }
-  cat("Writing final data base.\n")
+  if(isTRUE(verbose)) cat("Writing final data base.\n\n")
   return(data)
 }
 
+extractEnvData = extractData
 
 fill.map = function(x, mask=1, FUN="max") {
   # fill a map with the max (min, mean, median) value of the map
@@ -1112,7 +1148,7 @@ getDistance = function (data, ref, ref2abs = NULL, lon = "lon", lat = "lat")
   return(output)
 }
 
-getSignedDistance = function(data, ref, abs, lon="lon", lat="lat") {
+getSignedDistance = function(data, ref, abs, lon="lon", lat="lat", digits=3) {
 
   grados2km  = 1.852*60*180/pi
   
@@ -1286,6 +1322,8 @@ TSS = function(data, coordNames = c("lat", "lon"), obs="observed",
 
 PredictivePerformance = function(data, coordNames = c("lat", "lon"), obs="observed",
                                  models=NULL, st.dev=TRUE, na.rm=TRUE) {
+
+  data = data[complete.cases(data), ]
   out1 = AUC(data=data, coordNames = coordNames, obs=obs, 
              models=models, st.dev=TRUE, na.rm=na.rm)
   out2 = kappa(data=data, coordNames = coordNames, obs=obs, 
@@ -1336,7 +1374,8 @@ calculateThresholds = function(data, coordNames = c("lat", "lon"),
                                models=NULL, opt.methods=2:12,
                                req.sens=0.95, req.spec=0.5,
                                FPC=1, FNC=10, ...) {
-  
+
+  data = data[complete.cases(data), ]
   if(is.null(models)) models = !(names(data) %in% c(coordNames, obs))
   observed = data[,obs]
   if(is.factor(observed)) observed = as.numeric(as.character(observed))  
@@ -1388,14 +1427,18 @@ leq = function(x, thr) {
   return(ind)
 }
 
-clearAbsences = function(data, species, vars, alpha=0.05, lowerOnly=FALSE) {
-  dataP    = data[data[,species]==1,]
+clearAbsences = function(data, control=NULL, species, vars, alpha=0.05, lowerOnly=FALSE) {
+  
   dataN    = data[data[,species]==0,]
+  dataP    = if(is.null(control)) data[data[, species]==1, ] else control[control[, species]==1, ]
+  
   dataN_PA = cleanZeros(data=dataN, control=dataP, vars=vars, 
                         alpha=alpha, lowerOnly=lowerOnly)
-  data_PA  = rbind(dataP, dataN_PA)
+  data_PA  = if(is.null(control)) rbind(dataP, dataN_PA) else dataN_PA
+  
   return(data_PA)
 }
+
 
 cleanZeros = function(data, control, vars, alpha=0.05, lowerOnly=FALSE) {
   
@@ -1438,13 +1481,14 @@ table.summary = function(..., sp) {
     output[i,tnames] = table(object[[i]][,sp])
   }
   total = apply(output, 1, sum, na.rm=TRUE)
-  percent = 100*round(output/total,3)
+  percent = round(output/total,3)
   output = cbind(output, total, percent)
   return(output)
 }
 
 balancePA = function(data, PA, sp, rpa=0.1, seed=771104) {
-  if(rpa<0 | rpa>1) error("rpa must be in [0,1].")
+
+  if(rpa<0 | rpa>1) error("ratio must be in [0,1].")
   ind.pa = which(PA[,sp]==0 & !is.na(PA[,sp]))
   ind.a  = which(data[,sp]==0 & !is.na(data[,sp]))
   ind.p  = which(data[,sp]==1 & !is.na(data[,sp]))
@@ -1463,11 +1507,16 @@ balancePA = function(data, PA, sp, rpa=0.1, seed=771104) {
     ind.pa = sample(ind.pa, npa)
     ind.a  = sample(ind.a, np-npa)
   }
-  cat("PA ratio = ", npa/np, " (critic = ", rpa,")\n", sep="")
-  print( c(presence=np, absence=np-npa, PA=npa) )
+  cat("Balancing prevalence in data for", sQuote(sp), ":\n")
+  cat("Pseudo-Absence ratio = ", round(npa/np,1), " (minimum ratio= ", rpa,")\n", sep="")
+  print( c(Presences=np, Absences=np-npa, 'Pseudo-Absences'=npa) )
   output = rbind(data[ind.p,], 
                  data[ind.a,],
                  PA[ind.pa,])
+  
+  cat("\nFinal data summary:\n")
+  print(table.summary(output, sp=sp))
+  cat("\n")
   return(output)
 }
 
@@ -1560,7 +1609,9 @@ fakeGAM2 = function(object) {
 }
 
 fitGAMs = function(object, formulas, FUN=identity, 
-                   name=deparse(substitute), link="logit") {
+                   name=NULL, link="logit") {
+  
+  name = deparse(substitute(object))
   
   FUN = match.fun(FUN)
   object$transform = FUN
@@ -1571,9 +1622,6 @@ fitGAMs = function(object, formulas, FUN=identity,
 #   obj2 = deparse(substitute(object, env=as.environment(-1)))
 #   
   DateStamp("Fitting models for", sQuote(name), "dataset.")
-#   DateStamp("Fitting models for", sQuote(obj2), "dataset.")
-#   fakeGAM(object=object)
-#   fakeGAM2(object=object)
 
   train = FUN(object$train)
   val   = FUN(object$val)
@@ -1606,19 +1654,20 @@ fitGAMs = function(object, formulas, FUN=identity,
     model = gam(model.formula, family = binomial(link=link), data = train)
     gc(verbose=FALSE)
     model$anova = anova(model)
+    model$call$family[2] = link
     object$models[[model.name]] = model
     # object$preplot[[models[i]]] = with(object$train, preplot(model))
     
     aic[model.name] = AIC(model)
     bic[model.name] = BIC(model)
-    object$predicted[, model.name] = model$fitted
+    object$predicted[, model.name] = predict(model, newdata=train, type="response")
     object$validation[, model.name] = predict(model, newdata=val, type="response")
   }
   
   DateStamp("Computing Predictive Performance...")
   
   object$fit = cbind(AIC=aic, BIC=bic)
-  
+
   object$performance$training   = PredictivePerformance(object$predicted, st.dev=FALSE)
   object$performance$validation = PredictivePerformance(object$validation, st.dev=FALSE)
   
@@ -1630,6 +1679,7 @@ fitGAMs = function(object, formulas, FUN=identity,
   class(object$formulas) = c("niche.models.formulas", class(object$formulas))
   return(object)
 }
+
 
 
 getPredictions = function(data) {
@@ -1823,9 +1873,9 @@ window.prediction.niche.models =
 
 getModel = function(object, model.name) {
   
+  dataset = deparse(substitute(object))
   if(!(model.name %in% names(object$models))) stop("Model ", sQuote(model.name), " not found")  
   model = object$models[[model.name]]
-  dataset = deparse(substitute(object))
   model$call$data    = eval(parse(text=paste0("get(\"", dataset,"\")$train")))
   model$call$formula = as.formula(.fmla2txt(model$formula))
   
@@ -1881,9 +1931,18 @@ getMap.prediction.niche.models = function(object, date, toPA=FALSE, prob=FALSE,
   }
 }
   
+.getPngFileName = function(filename, replacement) {
+  if(is.null(filename)) filename = "map"
+  filename = gsub(pattern="\\.png", "", filename)
+  filename = paste0(paste(filename, replacement, sep="-"), ".png")
+  return(filename)
+}
+
 plot.prediction.niche.models = function(x, y=NULL, date=NULL, 
                                         slice=NULL, type=NULL, mfclim=c(3,4),
-                                        toPA=FALSE, prob=FALSE, criteria="MinROCdist", ...) {
+                                        toPA=FALSE, prob=FALSE, criteria="MinROCdist", 
+                                        png=FALSE, pdf=FALSE, filename=NULL, 
+                                        width=800, height=800, res=NA, ...) {
   
   opar = par(no.readonly=TRUE)
   on.exit(par(opar))
@@ -1916,7 +1975,8 @@ plot.prediction.niche.models = function(x, y=NULL, date=NULL,
     try(image.map(x$info$coords$lon, x$info$coords$lat, z, zlim=c(0,1), ...),
         silent=TRUE)
     points(-180,-180)
-    mtext(time.lab, 3, line=1, adj=1, cex=0.75)    
+    mtext(time.lab, 3, line=1, adj=1, cex=0.75) 
+    filename = .getPngFileName(filename, gsub(" ", "", time.lab))
   } else {
     if(type=="climatology") {
       par(mfrow=mfclim, oma=c(1,1,1,1), mar=c(4,4,1,1))
@@ -1929,7 +1989,9 @@ plot.prediction.niche.models = function(x, y=NULL, date=NULL,
         points(-180,-180)
         mtext(month.name[i], 3, line=1, adj=1, cex=0.75)            
       }
+      filename = .getPngFileName(filename, "climatology")
     }
+    
     if(type=="seasonal") {
       par(mfrow=c(2,2), oma=c(1,1,1,1), mar=c(4,4,1,1))
       z = x$season/x$info$factor
@@ -1942,10 +2004,18 @@ plot.prediction.niche.models = function(x, y=NULL, date=NULL,
         points(-180,-180)
         mtext(slab[i], 3, line=1, adj=1, cex=0.75)            
       }
+      filename = .getPngFileName(filename, "seasonal")
     }
+    
     if(!(type %in% c("seasonal", "climatology"))) {
       stop("Invalid 'type' argument, it can be 'seasonal' or 'climatology'.")
     }
+  }
+  
+  if(isTRUE(png)) {
+    png = match.fun("png")
+    dev.copy(png, filename=filename, res=res, width=width, height=height)
+    dev.off()
   }
   return(invisible())
 }
@@ -2024,19 +2094,17 @@ anova.niche.models = function(object, model=NULL, criteria="AUC", ...) {
   return(invisible(NULL))
 }
 
-printMaps = function(object, dir, prefix, width=800, height=800, ...) {
-  png(filename=file.path(dir, paste0(prefix,"-avg.png")),
-      width=width, height=height)
-  plot(object, ...)
-  dev.off()
-  png(filename=file.path(dir, paste0(prefix,"-season.png")),
-      width=width, height=height)
-  plot(object, type="seasonal", ...)
-  dev.off()
-  png(filename=file.path(dir, paste0(prefix,"-clim.png")), 
-      width=2*width, height=1.5*height)
-  plot(object, type="climatology", ...)
-  dev.off()
+printMaps = function(object, dir, prefix, width=800, height=800, res=NA, ...) {
+  
+  filename = file.path(dir, prefix)
+
+  plot(object, png=TRUE, width=width, height=height, res=res, filename=filename, ...)
+
+  plot(object, type="seasonal", png=TRUE, width=width, height=height, res=res, filename=filename, ...)
+
+  plot(object, type="climatology", png=TRUE, width=2*width, height=1.5*height, 
+       res=res, filename=filename, ...)
+
   return(invisible())
 }
 
@@ -2070,7 +2138,6 @@ plot.niche.models = function(x, model=NULL,
                               mar=c(5,5,1,1), oma=c(0.5,1,4,1.5), ...) {
   opar = par(no.readonly=TRUE)
   on.exit(par(opar))
-  
   model = x$models[[model.name]]
   fml = .fmla2txt(model$formula)
   model$call$data    = eval(parse(text=paste0("get(\"", dataset,"\")$train")))
@@ -2335,7 +2402,7 @@ getYearMax = function(object, index) {
 }
 
 
-getSesonalMap = function(object) {
+getSeasonalMap = function(object) {
   nrow = getRleIndex(object$info$time$season)
   map  = object$prediction
   nslice = nrow(nrow)
@@ -2410,3 +2477,146 @@ removeSector = function(x, coords, lon, lat) {
   return(out)
 }
 
+makeTransparent = function(..., alpha=0.5) {
+  
+  if(alpha<0 | alpha>1) stop("alpha must be between 0 and 1")
+  
+  alpha = floor(255*alpha)  
+  newColor = col2rgb(col=unlist(list(...)), alpha=FALSE)
+  
+  .makeTransparent = function(col, alpha) {
+    rgb(red=col[1], green=col[2], blue=col[3], alpha=alpha, maxColorValue=255)
+  }
+  
+  newColor = apply(newColor, 2, .makeTransparent, alpha=alpha)
+  
+  return(newColor)
+  
+}
+
+
+barplot2 = function(hist, horiz=TRUE, ...) {
+  
+  
+  xax = if(isTRUE(horiz)) 2 else 1
+  yax = if(isTRUE(horiz)) 1 else 2
+  
+  
+  hist2 = data.frame(counts=hist$counts,
+                     mids=hist$mids,
+                     density=hist$density)
+  
+  hist2$bp = barplot(hist$counts, horiz=horiz, axes=FALSE, ...)
+  
+  axis(yax)
+  md = lm(bp ~ mids, data=hist2)
+  posx = predict(md, newdata=data.frame(mids=hist$breaks))
+  axis(xax, at=posx, labels=coord2text(hist$breaks, type="lat"),
+       las=xax)
+  box()
+  
+  hist$axis = posx
+  
+  return(invisible())
+}
+
+.removeVars = function(x, vars) {
+  vars = intersect(vars, names(x))
+  if(length(vars)==0) return(x)
+  
+  for(var in vars) {
+    x[, var] = NULL
+  }
+  return(x)
+}
+
+createPredictionFiles = function(files, aux.files=NULL, lat, lon, start, end, 
+                                 dx, dy=dx, frequency=12, output=".",
+                                 FUN=NULL, FUN2=NULL, 
+                                 verbose=FALSE, prefix="base-env", ...) {
+  
+  if(!is.null(FUN)) FUN = match.fun(FUN)
+  
+  if(!file.exists(output)) dir.create(output, recursive=TRUE)
+  
+  DateStamp("Starting at")
+  
+  if(!is.null(aux.files)) {
+    DateStamp("Creating auxiliar prediction file...")
+    xy = createAuxPredictionFiles(files=aux.files, lat=lat, lon=lon, 
+                                   start=start, end=end, dx, dy=dx, 
+                                   frequency=frequency, output=output,
+                                   FUN=FUN2, verbose=TRUE, 
+                                   prefix=prefix, ...)
+    auxVars = setdiff(names(xy), c("lat", "lon"))
+  } else {
+    coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy)
+    xy = data.frame(lat=as.numeric(coords$LAT), lon=as.numeric(coords$LON))
+    xy$lon = round(xy$lon, 3)
+    xy$lat = round(xy$lat, 3)
+  }
+  
+  day = 15 # to do
+  times  = createTimeAxis(start=start, end=end, center=TRUE, frequency=frequency)
+  dates = data.frame(year=times$year, month=times$month)
+  dates$time = dates$year + (dates$month-1)/12 + (day-1)/365
+
+  for(t in seq_len(nrow(dates))) {
+    DateStamp("Time step", t, ":", as.numeric(dates[t,1:2]), "\t\t")
+    xy$time =  dates$time[t]
+    xy$month = dates$month[t]
+    out = extractData(files=files, data=xy, 
+                      lat=lat, lon=lon, start=start, end=end, dx=dx, dy=dy,
+                      verbose=verbose)
+    
+    if(!is.null(FUN)) out = FUN(out, ...)
+    
+    out$time = NULL
+    if(!is.null(aux.files)) out = .removeVars(out, vars=auxVars)
+    
+    file.out = paste0(prefix, "-Y",dates$year[t], "M",
+                      sprintf("%02d",dates$month[t]),".csv")
+    
+    write.csv(out, file.path(output, file.out), row.names=FALSE)
+  }
+  
+  DateStamp("Finishing at") 
+  
+  return(invisible())
+}
+
+
+createAuxPredictionFiles = function(files, lat, lon, start, end, 
+                                 dx, dy=dx, frequency=12, output=".",
+                                 FUN=NULL, verbose=FALSE, 
+                                 prefix="base-env-auxiliar", ...) {
+  
+  if(!is.null(FUN)) FUN = match.fun(FUN)
+  if(!file.exists(output)) dir.create(output, recursive=TRUE)
+  
+  
+  coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy)
+  
+  out      = data.frame(lat=as.numeric(coords$LAT), lon=as.numeric(coords$LON))
+  out$lon  = round(out$lon, 3)
+  out$lat  = round(out$lat, 3)
+  out$time =  start[1] + 14/365
+  
+  out = extractData(files=files, data=out, 
+                    lat=lat, lon=lon, start=start, end=end, dx=dx, dy=dy,
+                    verbose=verbose)
+  
+  if(!is.null(FUN)) {
+    DateStamp("Post-processing auxiliar file.")
+    out = FUN(out, ...)
+  }
+  out$time = NULL
+  
+  file.out = paste0(prefix,"-auxiliar.csv")
+  
+  write.csv(out, file.path(output, file.out), row.names=FALSE)
+  
+  DateStamp("Finishing at") 
+  
+  return(invisible(out))
+}
