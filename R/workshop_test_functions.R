@@ -2296,8 +2296,6 @@ normalize = function(x) {
   
 }
 
-
-
 .inArea = function(x, lat, lon) {
   cnull = c(-Inf, Inf)
   if(is.null(lat)) lat = cnull
@@ -2351,24 +2349,115 @@ ponderate = function(x, aux, vars=names(aux), lat=NULL, lon=NULL) {
 
 .na.sum = function(x) if(!all(is.na(x))) sum(x, na.rm=TRUE) else NA
 
-.getDensity = function(w, x, n=256, adjust=1.5) {
+.getDensity = function(w, x, n=256, adjust=1.5, range=NULL, nLim=10) {
   if(all(is.na(w)) || all(is.na(x))) return(rep(NA, length=n))
-  ran = range(pretty(x), na.rm=TRUE)
+  if(sum(w!=0)<= nLim) return(rep(NA, length=n))
+  if(sum(w)==0) return(rep(0, length=n))
+  ran = if(is.null(range)) range(pretty(x), na.rm=TRUE) else range
   ind = complete.cases(data.frame(w,x))
   x = x[ind]
   w = normalize(w[ind])
   out = density(x=x, weights=w, n=n, adjust=adjust,
                 from=ran[1], to=ran[2])
-  out = y=out$y
+  out = out$y
   return(out)
 }
 
-getDensity = function(x, w, n=256, adjust=1.5) {
-  out = apply(w, 2, .getDensity, x=x, n=n, adjust=adjust)
-  ale = range(pretty(x))
+getDensity = function(x, w, n=256, adjust=1.5, range=NULL, nLim=10) {
+  out = apply(w, 2, .getDensity, x=x, n=n, adjust=adjust, range=range, nLim=nLim)
+  ale = if(is.null(range)) range(pretty(x)) else range
   ale = seq(from=ale[1], to=ale[2],len=n)
   out = list(xaxis=ale, densities=out)
   return(out)
+}
+
+
+getProfiles = function(var, w, by, data, n=256, nLim=10, adjust=1.5, alpha=NULL) {
+  
+  if(!is.null(alpha)) {
+    if(length(alpha)==1) alpha = rep(alpha, len=length(w))
+    if(length(alpha)!=length(w)) 
+      stop("Parameter alpha doesn't match the length of w")
+  } else {
+    alpha = rep(0.5, len=length(w))
+  }
+  validModels = w %in% names(data)
+  if(length(validModels)!=length(w)) {
+    msg = paste("Models", w[!validModels], "are ignored.")
+    warning(msg)
+  }
+  w     = w[validModels]
+  alpha = alpha[validModels]
+  sortBy = sort(unique(data[, by]))
+  ale = data[, var]
+  ali = range(pretty(ale), na.rm=TRUE)
+  ale = seq(from=ali[1], to=ali[2],len=n)
+  
+  output = list()
+  output$x = ale
+  output$by = sortBy
+  output$n = numeric()
+  output$npos = array(dim=c(length(sortBy), length(w)+1))
+  output$patterns = array(NA, dim=c(length(sortBy),length(w), 7))
+  colnames(output$npos) = c("nobs", w)
+  rownames(output$npos) = sortBy
+    
+  for(i in seq_along(w)) {
+    model = w[i]
+    output[[model]] = list()
+    for(j in seq_along(sortBy)) {
+      dat = data[data[, by]==sortBy[j], ]
+      output$n[j] = nrow(dat)
+      xx = dat[, var]
+      ww = dat[, model]
+      npos = sum(ww>0, na.rm=TRUE)
+      output$npos[j, i+1] = npos
+      thisProfile = if(npos > 5*nLim) {
+          .getDensity(x = xx, w = ww, n=n, range=ali, adjust=adjust, nLim=nLim)
+      } else rep(NA, length=n)
+      
+      output$patterns[j, i, ] = .sevennum(x=ale, w=thisProfile)
+      output[[model]][[j]] = thisProfile
+      
+    }
+    
+    output[[model]] = as.data.frame(output[[model]])
+    names(output[[model]]) = sortBy
+    patNames = c("mean", "median", "mode", "P05", "P25", "P75", "P95")
+    dimnames(output$pattern) = list(sortBy, w, patNames)
+
+  }
+  
+  output$npos[, 1] = output$n
+  output$npos = as.data.frame(output$npos)  
+  
+  return(output)
+  
+}
+
+.sevennum = function(x, w) {
+  if(all(is.na(w))) return(rep(NA, 7))
+  w = w/sum(w, na.rm=TRUE)
+  cw = round(cumsum(w), 3)
+  ind = seq_len(sum(cw<1)+1)
+  ww = cw[ind]
+  xx = x[ind]
+  prob = function(p) {
+    fun = splinefun(x=ww, y = xx)
+    out = fun(p) 
+    return(out)
+  }
+  out = NULL
+  out["mean"] = weighted.mean(x, w)
+  out["median"] = prob(0.50)
+  out["mode"] = x[which.max(w)]
+  out["p05"] = prob(0.05)
+  out["p25"] = prob(0.25)
+  out["p75"] = prob(0.75)
+  out["p95"] = prob(0.95)
+  
+  return(out)
+  
 }
 
 
