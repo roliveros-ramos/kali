@@ -281,10 +281,10 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
                     hires=FALSE, land.col="darkolivegreen4", sea.col="aliceblue", 
                     boundaries.col = "black", grid.col="white", grid=TRUE,
                     cex=0.5, pch=19, main=NULL, add=FALSE, axes=TRUE, 
-                    border=!axes, asp=NA, axs=NULL, xaxs=axs, yaxs=axs, ...) {
+                    border=!axes, asp=NA, axs="i", xaxs=axs, yaxs=axs, ...) {
   
-  if(is.null(xaxs)) xaxs = if(is.null(xlim)&is.na(domain)) "r" else "i"
-  if(is.null(yaxs)) yaxs = if(is.null(ylim)&is.na(domain)) "r" else "i"
+#   if(is.null(xaxs)) xaxs = if(is.null(xlim)&is.na(domain)) "i" else "i"
+#   if(is.null(yaxs)) yaxs = if(is.null(ylim)&is.na(domain)) "i" else "i"
   
   if(missing(x)) x = NA
   if(is.data.frame(x) & is.null(y)) {
@@ -302,14 +302,14 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
   
   if(is.null(xlim)) xlim = .getDomain(domain, "x")
   if(is.null(xlim)) {
-    xlim = range(xy$x, na.rm=TRUE)
-    xaxs = "r"
+    xlim = range(pretty(xy$x), na.rm=TRUE)
+#     xaxs = "r"
   }
   
   if(is.null(ylim)) ylim = .getDomain(domain, "y")
   if(is.null(ylim)) {
-    ylim = range(xy$y, na.rm=TRUE)
-    yaxs = "r"
+    ylim = range(pretty(xy$y), na.rm=TRUE)
+#     yaxs = "r"
   }
   
   if(!add) {
@@ -1120,7 +1120,8 @@ getPredictionMap = function(output, time, species) {
 }
 
 
-getDistance = function (data, ref, ref2abs = NULL, lon = "lon", lat = "lat") 
+getDistance = function (data, ref, ref2abs = NULL, lon = "lon", lat = "lat", 
+                        index.return=FALSE) 
 {
   data     = data[,c(lat,lon)]
   dat      = data[!duplicated(data),]
@@ -1135,16 +1136,22 @@ getDistance = function (data, ref, ref2abs = NULL, lon = "lon", lat = "lat")
   ref = cbind(ref, cos(ref[, 1]), sin(ref[, 1]))
   xy = x * grados2rad
   xy = cbind(xy, cos(xy[, 1]), sin(xy[, 1]))
-  output = array(dim = c(nrow(dat), 1 + (!is.null(ref2abs))))
+  ncols = 1 + isTRUE(index.return) + !is.null(ref2abs)
+  output = array(dim = c(nrow(dat), ncols))
   ind = which(complete.cases(xy))
-  output[ind, ] = .getDistance(xy = xy[ind, ], ref = ref, ref2abs = ref2abs) * 
-    grados2km
+  output[ind, ] = .getDistance(xy = xy[ind, ], ref = ref, 
+                               ref2abs = ref2abs,
+                               index.return=index.return) 
+  output[, 1] = output[, 1] * grados2km
+  if(!is.null(ref2abs)) output[, 2] = output[, 2] * grados2km
+
   xnames = if(!is.null(ref2abs)) c("dist", "ref2abs") else "dist"
+  xnames = if(isTRUE(index.return)) c(xnames, "ix") else xnames
   colnames(output) = xnames
   output = data.frame(dat, output)
   output = merge(data, output, all=TRUE, sort=FALSE)
   ind    = sort(output$ind, index=TRUE)$ix
-  output = as.matrix(output[ind, xnames])
+  output = drop(as.matrix(output[ind, xnames]))
   return(output)
 }
 
@@ -1419,7 +1426,7 @@ leq = function(x, thr) {
 }
 
 .insider = function(data, control, var, alpha, lowerOnly) {
-  # TODO: handle factors
+  # TO_DO: handle factors
   delta = alpha/2
   alpha = if(!lowerOnly) c(delta, 1 - delta) else c(1-alpha, 1)
   alpha = quantile(control[,var], prob=alpha, na.rm=TRUE)
@@ -1542,7 +1549,7 @@ splitDataSet = function(data, var, factor=0.15, seed=771104) {
 }
 
 .gam.fmla = function(y, var, spline=NULL, loess=NULL, factors=NULL) {
-  
+
   if(is.null(loess)) {
     loess = rep(FALSE, length(var))
     names(loess) = var
@@ -1939,7 +1946,8 @@ getMap.prediction.niche.models = function(object, date, toPA=FALSE, prob=FALSE,
 }
 
 plot.prediction.niche.models = function(x, y=NULL, date=NULL, 
-                                        slice=NULL, type=NULL, mfclim=c(3,4),
+                                        slice=NULL, type=NULL, mfclim=c(3,4), 
+                                        mar=c(4,4,1,1),
                                         toPA=FALSE, prob=FALSE, criteria="MinROCdist", 
                                         png=FALSE, pdf=FALSE, filename=NULL, 
                                         width=800, height=800, res=NA, ...) {
@@ -1979,7 +1987,7 @@ plot.prediction.niche.models = function(x, y=NULL, date=NULL,
     filename = .getPngFileName(filename, gsub(" ", "", time.lab))
   } else {
     if(type=="climatology") {
-      par(mfrow=mfclim, oma=c(1,1,1,1), mar=c(4,4,1,1))
+      par(mfrow=mfclim, mar=mar)
       z = x$climatology/x$info$factor
       if(toPA) z = toPA(z, thr, prob=prob)
       for(i in 1:12) {
@@ -1993,7 +2001,7 @@ plot.prediction.niche.models = function(x, y=NULL, date=NULL,
     }
     
     if(type=="seasonal") {
-      par(mfrow=c(2,2), oma=c(1,1,1,1), mar=c(4,4,1,1))
+      par(mfrow=c(2,2), mar=mar)
       z = x$season/x$info$factor
       if(toPA) z = toPA(z, thr, prob=prob)
       slab = toupper(dimnames(x$season)[[3]])
@@ -2213,9 +2221,29 @@ fillMap.matrix = function(object, mask, radius=1) {
     map2[ind] = fill$z
     map2[is.na(mask)] = NA
   } else {
-    map2 = object
+    return(object)
   }
   return(map2)
+}
+
+fillMap.data.frame = function(object, mask=NULL, var, radius=1, dx=1/24, thr=10) 
+  {
+
+  z = object[, var]
+  latR = range(pretty(object$lat))
+  lonR = range(pretty(object$lon))
+  axes = createGridAxes(lat=latR, lon=lonR, dx=dx)
+  fill = interpp(x=object$lat, y=object$lon, z=object[, var], 
+                 xo=as.numeric(axes$LAT), yo=as.numeric(axes$LON))
+#   map = matrix(fill$z, nrow=nrow(axes$LON), ncol=ncol(axes$LON))
+#   mask = array(1, dim=dim(axes$LON))
+#   map = fillMap(map, mask, radius=2)
+#   fill$z = as.numeric(map)
+  fill$z[fill$z<thr] = NA
+  names(fill) = c("lat", "lon", var)
+  fill = as.data.frame(fill)
+  return(fill)
+
 }
 
 fillMap.array = function(object, mask, radius=1) {
@@ -2372,8 +2400,12 @@ getDensity = function(x, w, n=256, adjust=1.5, range=NULL, nLim=10) {
 }
 
 
-getProfiles = function(var, w, by, data, n=256, nLim=10, adjust=1.5, alpha=NULL) {
+getProfiles = function(var, w, by, data, ref=NULL, n=256, nLim=10, 
+                       adjust=1.5, alpha=NULL) {
   
+  if(!is.null(ref)) {
+    if(!(ref %in% w)) stop("Reference model ", sQuote(ref), " not found in model list 'w'.") 
+  }
   if(!is.null(alpha)) {
     if(length(alpha)==1) alpha = rep(alpha, len=length(w))
     if(length(alpha)!=length(w)) 
@@ -2388,6 +2420,11 @@ getProfiles = function(var, w, by, data, n=256, nLim=10, adjust=1.5, alpha=NULL)
   }
   w     = w[validModels]
   alpha = alpha[validModels]
+  ind   = !duplicated(w)
+  w     = w[ind]
+  alpha = alpha[ind]
+  w     = unique(c(ref, w))
+  
   sortBy = sort(unique(data[, by]))
   ale = data[, var]
   ali = range(pretty(ale), na.rm=TRUE)
@@ -2398,13 +2435,14 @@ getProfiles = function(var, w, by, data, n=256, nLim=10, adjust=1.5, alpha=NULL)
   output$by = sortBy
   output$n = numeric()
   output$npos = array(dim=c(length(sortBy), length(w)+1))
-  output$patterns = array(NA, dim=c(length(sortBy),length(w), 7))
+  patterns = array(NA, dim=c(length(sortBy),length(w), 7))
+  profiles = list()
   colnames(output$npos) = c("nobs", w)
   rownames(output$npos) = sortBy
     
   for(i in seq_along(w)) {
     model = w[i]
-    output[[model]] = list()
+    profiles[[model]] = list()
     for(j in seq_along(sortBy)) {
       dat = data[data[, by]==sortBy[j], ]
       output$n[j] = nrow(dat)
@@ -2412,25 +2450,40 @@ getProfiles = function(var, w, by, data, n=256, nLim=10, adjust=1.5, alpha=NULL)
       ww = dat[, model]
       npos = sum(ww>0, na.rm=TRUE)
       output$npos[j, i+1] = npos
-      thisProfile = if(npos > 5*nLim) {
-          .getDensity(x = xx, w = ww, n=n, range=ali, adjust=adjust, nLim=nLim)
+      nx = if(!is.null(ref)) sum(dat[, ref]>0, na.rm=TRUE) else npos  
+      thisProfile = if( (nrow(dat) >= 5*nLim) & (nx > nLim) ) {
+          .getDensity(x = xx, w = ww, n=n, range=ali, adjust=adjust, nLim=0)
       } else rep(NA, length=n)
       
-      output$patterns[j, i, ] = .sevennum(x=ale, w=thisProfile)
-      output[[model]][[j]] = thisProfile
+      patterns[j, i, ] = .sevennum(x=ale, w=thisProfile)
+      profiles[[model]][[j]] = thisProfile
       
     }
-    
-    output[[model]] = as.data.frame(output[[model]])
-    names(output[[model]]) = sortBy
-    patNames = c("mean", "median", "mode", "P05", "P25", "P75", "P95")
-    dimnames(output$pattern) = list(sortBy, w, patNames)
+        
+    profiles[[model]] = as.data.frame(profiles[[model]])
+    names(profiles[[model]]) = sortBy
 
   }
   
-  output$npos[, 1] = output$n
-  output$npos = as.data.frame(output$npos)  
+  patNames = c("mean", "median", "mode", "P05", "P25", "P75", "P95")
+  dimnames(patterns) = list(sortBy, w, patNames)
   
+  if(!is.null(ref)) {
+    output$patterns$observed = patterns[, 1,]
+    output$patterns$models   = patterns[,-1,]
+    output$profiles$observed = profiles[[ref]]
+    output$profiles$models   = profiles[-1]
+    
+  } else {
+    output$patterns$observed = NULL
+    output$patterns$models   = patterns
+    output$profiles$observed = NULL
+    output$profiles$models   = profiles
+  }
+  
+  output$npos[, 1] = output$n
+  output$npos = as.data.frame(output$npos)
+    
   return(output)
   
 }
@@ -2708,4 +2761,24 @@ createAuxPredictionFiles = function(files, lat, lon, start, end,
   DateStamp("Finishing at") 
   
   return(invisible(out))
+}
+
+plotDistributionMap <- function (object, var, dx, FUN=mean, log=FALSE, 
+                                 hires=FALSE, thr=-Inf, ...) {
+  # to be improved: interpolation
+  FUN = match.fun(FUN)
+  
+  latR = range(pretty(object$lat))
+  lonR = range(pretty(object$lon))
+  
+  axes = createGridAxes(lat=latR, lon=lonR, dx=dx)
+  
+  fill = fillMap(object, var=var, dx=dx/4)
+  map  = table2grid(fill, var=var, 
+                    lat=latR, lon=lonR, dx=dx, FUN=FUN)
+  if(isTRUE(log)) map = log(map)
+  map[map<thr] = NA
+  image.map(axes$lon, axes$lat, map, hires=hires, ...)
+  
+  return(invisible())
 }
