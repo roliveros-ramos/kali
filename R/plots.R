@@ -1,5 +1,20 @@
 # plot.niche.models alias for image.niche.model
 
+#' @title Nice image plots for maps
+#' @description This function plots an image for a georeferenced matrix, 
+#' assuming x and y axes are longitude and latitude.  
+#' @param lon vector or matrix of longitude values, following the conventions
+#' of \code{image}.
+#' @param lat vector or matrix of latitude values, following the conventions
+#' of \code{image}.
+#' @param z matrix of values, following the conventions of \code{image}.
+#' @param \dots Additional parameters to be passed to \code{image.plot}.
+#' @author Ricardo Oliveros-Ramos, modified from xxx's \code{image.plot} from 
+#' the fields package
+#' @examples
+#' load(anchovy)
+#' image.map(lon=anchovy$lon, lat=anchovy$lat, z=anchovy$z)
+#' @export
 image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FALSE, nlevel = 1000, horizontal = FALSE, 
                       legend.shrink = 0.9, legend.width = 1.2, 
                       legend.mar = ifelse(horizontal, 3.1, 5.1), legend.lab = NULL, graphics.reset = FALSE, 
@@ -128,15 +143,25 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
   return(invisible())
 }
 
-
+#' @title Nice scatter plots for georeferenced data
+#' @description This function makes and scatter plot given the longitude and latitude
+#' of the data points.  
+#' @param x vector of longitude values, or a data.frame containing variables named 'lon'
+#' and 'lat'
+#' @param y vector of latitude values.
+#' @param domain
+#' @param \dots Additional parameters to be passed to \code{points}.
+#' @author Ricardo Oliveros-Ramos
+#' @examples
+#' load(mackerel)
+#' image.map(mackerel)
+#' image.map(domain="peru")
+#' @export
 plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0, 
                     hires=FALSE, land.col="darkolivegreen4", sea.col="aliceblue", 
                     boundaries.col = "black", grid.col="white", grid=TRUE,
                     cex=0.5, pch=19, main=NULL, add=FALSE, axes=TRUE, 
                     border=!axes, asp=NA, axs="i", xaxs=axs, yaxs=axs, ...) {
-  
-  #   if(is.null(xaxs)) xaxs = if(is.null(xlim)&is.na(domain)) "i" else "i"
-  #   if(is.null(yaxs)) yaxs = if(is.null(ylim)&is.na(domain)) "i" else "i"
   
   if(missing(x)) x = NA
   if(is.data.frame(x) & is.null(y)) {
@@ -253,13 +278,6 @@ barplot2 = function(hist, horiz=TRUE, ...) {
   
   return(invisible())
 }
-
-
-
-
-
-
-
 
 
 
