@@ -1,0 +1,10 @@
+note <- sprintf("R package version %s", 0.1)
+
+bibentry(bibtype = "Article",
+         title = "kali: Tools for habitat and niche modeling.",
+         journal = "Submitted",
+         author = c(person("Ricardo", "Oliveros--Ramos"),
+                    person("Criscely", "Luján")),
+         year = 2016,
+         note = note,
+         url = "htpps://roliveros-ramos.github.com/kali")

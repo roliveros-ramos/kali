@@ -1,0 +1,11 @@
+domains = NULL
+# domains$name = list(x=c(lonMin, lonMax), y=c(latMin, latMax))
+domains$peru      = list(x=c(-90,-70), y=c(-20,0)) 
+domains$peps      = list(x=c(-100,-70), y=c(-40,10))
+domains$peruS     = list(x=c(-75,-70), y=c(-20,-15))
+domains$peruN     = list(x=c(-86,-78), y=c(-10, -2))
+domains$peruC     = list(x=c(-80,-74), y=c(-16,-10))
+domains$peruNC    = list(x=c(-87,-73), y=c(-16,-2))
+domains$peru2     = list(x=c(-88,-70), y=c(-20,-2))
+domains$peru3     = list(x=c(-93,-70), y=c(-20,6))
+domains$ESPacific = list(x=c(-100,-65), y=c(-50,10))
