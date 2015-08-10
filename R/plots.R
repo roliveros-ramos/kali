@@ -1,5 +1,7 @@
 # plot.niche.models alias for image.niche.model
 
+# image.map ---------------------------------------------------------------
+
 #' @title Nice image plots for maps
 #' @description This function plots an image for a georeferenced matrix, 
 #' assuming x and y axes are longitude and latitude.  
@@ -143,6 +145,9 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
   return(invisible())
 }
 
+
+# plot.map ----------------------------------------------------------------
+
 #' @title Nice scatter plots for georeferenced data
 #' @description This function makes and scatter plot given the longitude and latitude
 #' of the data points.  
@@ -199,6 +204,37 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
     title(main=main)
   }
   points(xy, cex=cex, pch=pch, ...)
+  
+  return(invisible())
+}
+
+
+# mapDetails --------------------------------------------------------------
+
+mapDetails = function(center=0, hires=FALSE, col="black", interior=FALSE, 
+                      axes=TRUE, border=TRUE, boundaries.col="black",
+                      grid=TRUE, grid.col="white", ...) {
+  
+  mapa = if (hires) {
+    require(mapdata)
+    "worldHires"
+  }
+  else {
+    require(maps)
+    "world"
+  }
+  
+  if(isTRUE(grid)) grid(col=grid.col, lty=1)
+  
+  map2(mapa, center = center, fill = TRUE, col = col, add = TRUE, 
+       interior=interior, border=boundaries.col, ...)
+  if(axes) {
+    map.axes2()
+    mtext("LONGITUDE", 1, line = 1.8, cex = 0.9*par("cex"))
+    mtext("LATITUDE", 2, line = 2.4, cex = 0.9*par("cex"))    
+  } else {
+    if(border) box()
+  }
   
   return(invisible())
 }

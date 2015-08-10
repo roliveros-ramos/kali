@@ -1,11 +1,3 @@
-# nice shape for frame plots
-getmfrow = function(n) {  
-  m1 = floor(sqrt(n))
-  m2 = ceiling(n/m1)
-  out = rev(sort(c(m1, m2)))
-  return(out)
-}
-
 # create grid axes (lat, lon)
 createGridAxes = function(lat,lon, dx, dy=dx) {
   # Create a rectangular grid given lat, lon and dxy.
@@ -70,24 +62,6 @@ map.axes2 = function(cex.axis=0.75, line=-0.4) {
   box()
   
   return(invisible(NULL))
-}
-
-# rotate a image clock or anti-clockwise
-rotate = function(x, direction="clockwise", revCol=TRUE) {
-  
-  out = switch(direction,
-               clockwise     = .rotate(x, revCol=revCol),
-               anticlockwise = .rotate2(x, revCol=revCol))
-  
-  return(out)
-}
-
-coord2text = function(coord, type) {
-  
-  if(!is.character(type)) type=deparse(substitute(type))
-  out = sapply(coord, FUN=.coord2text, type=type)
-  
-  return(out)
 }
 
 

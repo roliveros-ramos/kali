@@ -1,34 +1,4 @@
 
-mapDetails = function(center, hires=FALSE, col="black", interior=FALSE, 
-                      axes=TRUE, border=TRUE, boundaries.col="black",
-                      grid=TRUE, grid.col="white", ...) {
-  
-  mapa = if (hires) {
-    require(mapdata)
-    "worldHires"
-  }
-  else {
-    require(maps)
-    "world"
-  }
-  
-  if(isTRUE(grid)) grid(col=grid.col, lty=1)
-  
-  map2(mapa, center = center, fill = TRUE, col = col, add = TRUE, 
-       interior=interior, border=boundaries.col, ...)
-  if(axes) {
-    map.axes2()
-    mtext("LONGITUDE", 1, line = 1.8, cex = 0.9*par("cex"))
-    mtext("LATITUDE", 2, line = 2.4, cex = 0.9*par("cex"))    
-  } else {
-    if(border) box()
-  }
-  
-  return(invisible())
-}
-
-
-
 .image.mapnl = function(lon, lat, z, center=0, hires=FALSE, add = FALSE, nlevel=1000, 
                         col = rev(rainbow(nlevel/10, start = 0/6, end = 4/6)),
                         land.col="darkolivegreen4", sea.col="aliceblue", boundaries.col = "black", 
@@ -134,4 +104,31 @@ mapDetails = function(center, hires=FALSE, col="black", interior=FALSE,
   
   return(invisible(x))
 }
+
+# nice shape for frame plots
+getmfrow = function(n) {  
+  m1 = floor(sqrt(n))
+  m2 = ceiling(n/m1)
+  out = rev(sort(c(m1, m2)))
+  return(out)
+}
+
+# rotate a image clock or anti-clockwise
+rotate = function(x, direction="clockwise", revCol=TRUE) {
+  
+  out = switch(direction,
+               clockwise     = .rotate(x, revCol=revCol),
+               anticlockwise = .rotate2(x, revCol=revCol))
+  
+  return(out)
+}
+
+coord2text = function(coord, type) {
+  
+  if(!is.character(type)) type=deparse(substitute(type))
+  out = sapply(coord, FUN=.coord2text, type=type)
+  
+  return(out)
+}
+
 
