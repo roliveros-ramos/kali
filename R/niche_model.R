@@ -683,7 +683,7 @@ saveAnimation.prediction.niche.models = function(object, file, dir=getwd(), inte
     img.name="niche_model", clean=TRUE, verbose=FALSE, 
     interval=interval, loop=1, check=TRUE, autobrowse=FALSE),
     silent=TRUE)
-  tmp = file.path(ani.options("outdir"), "temp.gif")
+  tmp = normalizePath("temp.gif")
   x = file.copy(from=tmp, file.path(dir, file), overwrite=TRUE)
   DateStamp("DONE.")
   
