@@ -184,3 +184,101 @@
   
   return(output)
 }
+
+
+# Zuta method -----------------------------------------------------------------------
+
+.watermass_zuta <- function(data, sst, sss, lat, depth, asFactors){
+  
+  # If there is not value for depth
+  if(is.null(data$depth)){
+    depth <- "depth"
+    data$depth <- 0.1
+  }
+  
+  # Select just useable variables
+  data <- data[,c(sst, sss, depth, lat)]
+  
+  # If there is not any complete row, out NA vector
+  if(sum(complete.cases(data)) == 0) return(output)
+  
+  # Define breaks values
+  # dcBreak <- 350*1.852 # 350 nautical miles to Km
+  latBreaks <- c(-Inf, -8, Inf)
+  sstBreaks <- c(-Inf, 14, 18, 20, 25, 27, Inf)
+  sssBreaks <- c(-Inf, 33.8, 34.8, 35.1, 35.7, Inf)
+  depthBreaks <- c(0, 20, 40, 50, 80, 100, 120, Inf)
+  
+  # Making categorizations
+  latCat <- cut(x = data$lat, breaks = latBreaks)
+  sstCat <- cut(x = data$sst, breaks = sstBreaks)
+  sssCat <- cut(x = data$sss, breaks = sssBreaks)
+  depthCat <- cut(x = data$depth, breaks = depthBreaks)
+  
+  # Show levels and values of each category
+  categories <- c("sstCat", "sssCat", "latCat", "depthCat")
+  #   for(i in categories){
+  #     tempVector <- levels(get(i))
+  #     names(tempVector) <- seq_along(tempVector)
+  #     
+  #     cat(paste0("\n\n Category: ", i, "\n"))
+  #     print(tempVector)
+  #   }
+  
+  # Set Conditions in paper:            #SST  #SSS  #Lat  #Season  #DC
+  wmDefinitions <- list(ats = list(list(5:6, 1, 1:2, 1)),
+                        
+                        aes = list(list(4:6, 2, 1:2, 1:2)),
+                        
+                        ass = list(list(3:5, 4, 1:2, 1:5)),
+                        
+                        acf = list(list(2, 3, 2, 1:4),
+                                   list(1:2, 3, 1, 1:6)),
+                        
+                        mcs = list(list(2, 4:5, 1:2, 1:5)),
+                        
+                        mesc = list(list(3:6, 3, 1:2, 1:3),
+                                    list(2, 2, 1:2, 1:3)))
+  
+  # Get combinations on big data frame
+  allDefinitions <- NULL
+  for(i in seq_along(wmDefinitions)){
+    tempDefinitions_1 <- wmDefinitions[[i]]
+    
+    for(j in seq_along(tempDefinitions_1)){
+      tempDefinitions_2 <- tempDefinitions_1[[j]]
+      
+      tempDefinitions_3 <- do.call("expand.grid", tempDefinitions_2)
+      colnames(tempDefinitions_3) <- categories
+      
+      tempDefinitions_3$wm <- names(wmDefinitions)[i]
+      
+      allDefinitions <- rbind(allDefinitions, tempDefinitions_3)
+    }
+  }
+  
+  # Set water mass definition in format sst-sss-lat-season-dc
+  allDefinitions <- data.frame(wm = allDefinitions$wm,
+                               definition = with(allDefinitions, 
+                                                 paste(sstCat, sssCat, latCat, 
+                                                       depthCat, sep = "-")),
+                               stringsAsFactors = FALSE)
+  
+  # Set categorized values in format sst-sss-lat-season-dc
+  data <- data.frame(sstCat = as.numeric(sstCat),
+                     sssCat = as.numeric(sssCat),
+                     latCat = as.numeric(latCat),
+                     depthCat = as.numeric(depthCat))
+  # data$wm <- apply(data[,categories], 1, paste, collapse = "-")
+  data$wm <- with(data, paste(sstCat, sssCat, latCat, depthCat, sep = "-"))
+  
+  # Get water mass for each row
+  output <- allDefinitions$wm[match(data$wm, allDefinitions$definition)]
+  
+  # convert output as factor
+  if(isTRUE(asFactors))
+    output <- factor(x = toupper(output), 
+                     levels = c("ATS", "AES", "ASS", "ACF", "MCS", "MESC"))
+  
+  return(toupper(output))
+}
