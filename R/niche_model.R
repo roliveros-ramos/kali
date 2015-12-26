@@ -212,9 +212,10 @@ splitDataSet = function(data, var, factor=0.15, seed=771104) {
   #   x = paste0(ft, "(",var, lt, ")")
   #   x = paste(x, collapse=" + ")
   
+  sym = if(isNamespaceLoaded("gam")) "df" else "k"
   if(!is.null(spline)) {
     fmla = as.list(spline[var])
-    fmla = append(fmla, paste0("s(", var, ",%d)", collapse=" + "), after=0)
+    fmla = append(fmla, paste0("s(", var, ",", sym ,"=%d)", collapse=" + "), after=0)
     fmla = do.call(sprintf, fmla)
   } else {
     fmla = paste0(var, collapse=" + ")
@@ -313,7 +314,7 @@ fitGAMs = function(object, formulas, FUN=identity,
     # TO_DO: filter complete cases
     model = gam(model.formula, family = binomial(link=link), data = train)
     gc(verbose=FALSE)
-    model$anova = anova(model)
+    model$anova = if(isNamespaceLoaded("gam")) anova(model) else NULL
     model$call$family[2] = link
     object$models[[model.name]] = model
     # object$preplot[[models[i]]] = with(object$train, preplot(model))
