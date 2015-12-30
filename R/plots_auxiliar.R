@@ -24,7 +24,10 @@ createGridAxes = function(lat,lon, dx, dy=dx) {
   LAT = matrix(rho$lat, ncol=nlat, nrow=nlon, byrow=TRUE)
   LON = matrix(rho$lon, ncol=nlat, nrow=nlon)
   
-  output = list(lon=lons.rho, lat=lats.rho, rho=rho, psi=psi, LON=LON, LAT=LAT)
+  area = (111*dy)*(111*cos(LAT*pi/180)*dx)
+  
+  output = list(lon=lons.rho, lat=lats.rho, rho=rho, psi=psi, 
+                LON=LON, LAT=LAT, area=area)
   
   return(output)
 }
