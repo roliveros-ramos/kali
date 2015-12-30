@@ -67,17 +67,18 @@ regrid.array = function(object, old, new, mask=NULL, ...) {
   } else {
     if(exists("lat", where=new) & exists("lat", where=new)) {
       stopifnot(is.numeric(lat), !is.matrix(lat), is.numeric(lon), !is.matrix(lon))
-      nLAT = matrix(new$lat, ncol=length(lat), nrow=length(lon), byrow=TRUE)
-      nLON = matrix(new$lon, ncol=length(lat), nrow=length(lon))
+      nLAT = matrix(new$lat, ncol=length(new$lat), nrow=length(new$lon), byrow=TRUE)
+      nLON = matrix(new$lon, ncol=length(new$lat), nrow=length(new$lon))
       nlat = as.numeric(nLAT)
       nlon = as.numeric(nLON)
     } else {
       stop("'new' must contain latitude and longitude information.")
     }
   }
-  
-  newmap = apply(object, 3, regrid, old=old, new=new, mask=mask, ...)
-  dim(newmap) = c(dim(nLAT), ncol(newmap))
+
+  ndim = seq_along(dim(object))[-c(1,2)]
+  newmap = apply(object, ndim, regrid, old=old, new=new, mask=mask, ...)
+  dim(newmap) = c(dim(nLAT), dim(object)[-c(1,2)])
   return(newmap)
 }
 
