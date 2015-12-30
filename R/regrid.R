@@ -9,14 +9,14 @@ regrid.matrix = function(object, old, new, mask=NULL, ...) {
   if(is.null(mask)&!is.null(new$mask)) mask=new$mask
   # old grid
   if(exists("LAT", where=old) & exists("LON", where=old)) {
-    stopifnot(dim(LAT)==dim(LON), dim(LAT)==dim(object))
+    stopifnot(dim(old$LAT)==dim(old$LON), dim(old$LAT)==dim(object))
     ilat = as.numeric(old$LAT)
     ilon = as.numeric(old$LON)
   } else {
     if(exists("lat", where=old) & exists("lat", where=old)) {
-      stopifnot(length(lat)==ncol(object), length(lon)==nrow(object))
-      iLAT = matrix(lat, ncol=ncol(object), nrow=nrow(object), byrow=TRUE)
-      iLON = matrix(lon, ncol=ncol(object), nrow=nrow(object))
+      stopifnot(length(old$lat)==ncol(object), length(old$lon)==nrow(object))
+      iLAT = matrix(old$lat, ncol=ncol(object), nrow=nrow(object), byrow=TRUE)
+      iLON = matrix(old$lon, ncol=ncol(object), nrow=nrow(object))
       ilat = as.numeric(iLAT)
       ilon = as.numeric(iLON)
     } else stop("'old' must contain latitude and longitude information.")
@@ -30,9 +30,10 @@ regrid.matrix = function(object, old, new, mask=NULL, ...) {
       nlon = as.numeric(nLON)
     } else {
       if(exists("lat", where=new) & exists("lat", where=new)) {
-        stopifnot(is.numeric(lat), !is.matrix(lat), is.numeric(lon), !is.matrix(lon))
-        nLAT = matrix(lat, ncol=length(lat), nrow=length(lon), byrow=TRUE)
-        nLON = matrix(lon, ncol=length(lat), nrow=length(lon))
+        stopifnot(is.numeric(new$lat), !is.matrix(new$lat), 
+                  is.numeric(new$lon), !is.matrix(new$lon))
+        nLAT = matrix(new$lat, ncol=length(new$lat), nrow=length(new$lon), byrow=TRUE)
+        nLON = matrix(new$lon, ncol=length(new$lat), nrow=length(new$lon))
         nlat = as.numeric(nLAT)
         nlon = as.numeric(nLON)
       } else {
@@ -66,8 +67,8 @@ regrid.array = function(object, old, new, mask=NULL, ...) {
   } else {
     if(exists("lat", where=new) & exists("lat", where=new)) {
       stopifnot(is.numeric(lat), !is.matrix(lat), is.numeric(lon), !is.matrix(lon))
-      nLAT = matrix(lat, ncol=length(lat), nrow=length(lon), byrow=TRUE)
-      nLON = matrix(lon, ncol=length(lat), nrow=length(lon))
+      nLAT = matrix(new$lat, ncol=length(lat), nrow=length(lon), byrow=TRUE)
+      nLON = matrix(new$lon, ncol=length(lat), nrow=length(lon))
       nlat = as.numeric(nLAT)
       nlon = as.numeric(nLON)
     } else {
