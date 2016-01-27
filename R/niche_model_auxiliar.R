@@ -19,11 +19,12 @@ toPA= function(x, thr=0, prob=FALSE) {
 clearAbsences = function(data, control=NULL, species, vars, alpha=0.05, lowerOnly=FALSE) {
   
   dataN    = data[data[,species]==0,]
-  dataP    = if(is.null(control)) data[data[, species]==1, ] else control[control[, species]==1, ]
+  dataPx   = data[data[, species]==1, ]
+  dataP    = if(is.null(control)) dataPx else control[control[, species]==1, ]
   
   dataN_PA = cleanZeros(data=dataN, control=dataP, vars=vars, 
                         alpha=alpha, lowerOnly=lowerOnly)
-  data_PA  = if(is.null(control)) rbind(dataP, dataN_PA) else dataN_PA
+  data_PA  = rbind(dataPx, dataN_PA)
   
   return(data_PA)
 }
