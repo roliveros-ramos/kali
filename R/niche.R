@@ -1,4 +1,4 @@
-pretty.factor = function(x, ...) return(x)
+pretty.factor = function(x, ...) return(factor(levels(x)))
 
 calculateNiche = function(model, nmax=1e5, doIt=FALSE, ...) {
   nvars = length(model$var.summary)
