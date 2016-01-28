@@ -63,6 +63,7 @@ plot.niche = function(x, vars, FUN=median, plot=TRUE, n=200, thr=NULL,
 .doSmooth = function(x, n) {
   out = list()
   xout = seq(0, 1, len=0.25*n)
+  if(length(x$x)<4) return(list(x=NULL, y=NULL))
   out$x = approx(x=seq(0, 1, len=length(x$x)), y=x$x, xout=xout)$y
   out$y = approx(x=seq(0, 1, len=length(x$y)), y=x$y, xout=xout)$y
   out = bezier::bezier(seq(0, 1, len=5*n), out)
