@@ -1,3 +1,4 @@
+pretty.factor = function(x, ...) return(x)
 
 calculateNiche = function(model, nmax=1e5, doIt=FALSE, ...) {
   nvars = length(model$var.summary)
@@ -48,7 +49,7 @@ plot.niche = function(x, vars, FUN=median, plot=TRUE, n=200, thr=NULL,
   if(!is.null(thr)) out$z = toPA(out$z, thr=thr)
   
   if(isTRUE(plot)) {
-    image.plot(out, xlab=out$labs$x, ylab=out$labs$y, zlim=c(0,1))    
+    image(out, xlab=out$labs$x, ylab=out$labs$y, zlim=c(0,1), col=tim.colors(64))    
   }
   return(invisible(out))
 }
