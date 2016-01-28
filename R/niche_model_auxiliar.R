@@ -46,8 +46,7 @@ cleanZeros = function(data, control, vars, alpha=0.05, lowerOnly=FALSE) {
   return(output)
 }
 
-# balance prevalence
-balancePA = function(data, PA, sp, rpa=0.1, seed=771104) {
+balancePA = function(data, PA, species, rpa=0.1, seed=771104) {
   
   if(rpa<0 | rpa>1) error("ratio must be in [0,1].")
   ind.pa = which(PA[,sp]==0 & !is.na(PA[,sp]))
@@ -68,16 +67,13 @@ balancePA = function(data, PA, sp, rpa=0.1, seed=771104) {
     ind.pa = sample(ind.pa, npa)
     ind.a  = sample(ind.a, np-npa)
   }
+
   cat("Balancing prevalence in data for", sQuote(sp), ":\n")
   cat("Pseudo-Absence ratio = ", round(npa/np,1), " (minimum ratio= ", rpa,")\n", sep="")
   print( c(Presences=np, Absences=np-npa, 'Pseudo-Absences'=npa) )
-  output = rbind(data[ind.p,], 
-                 data[ind.a,],
-                 PA[ind.pa,])
   
-  cat("\nFinal data summary:\n")
-  print(table.summary(output, sp=sp))
-  cat("\n")
+  output = merge(data[c(ind.p, ind.a),], PA[ind.pa,], all=TRUE, sort=FALSE)
+  output = output[, names(data)] # only columns in data
   
   return(output)
 }
