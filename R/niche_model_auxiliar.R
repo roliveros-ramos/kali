@@ -49,9 +49,9 @@ cleanZeros = function(data, control, vars, alpha=0.05, lowerOnly=FALSE) {
 balancePA = function(data, PA, species, rpa=0.1, seed=771104) {
   
   if(rpa<0 | rpa>1) error("ratio must be in [0,1].")
-  ind.pa = which(PA[,sp]==0 & !is.na(PA[,sp]))
-  ind.a  = which(data[,sp]==0 & !is.na(data[,sp]))
-  ind.p  = which(data[,sp]==1 & !is.na(data[,sp]))
+  ind.pa = which(PA[,species]==0 & !is.na(PA[,species]))
+  ind.a  = which(data[,species]==0 & !is.na(data[,species]))
+  ind.p  = which(data[,species]==1 & !is.na(data[,species]))
   
   np  = length(ind.p)
   nn  = length(ind.a)
@@ -68,7 +68,7 @@ balancePA = function(data, PA, species, rpa=0.1, seed=771104) {
     ind.a  = sample(ind.a, np-npa)
   }
 
-  cat("Balancing prevalence in data for", sQuote(sp), ":\n")
+  cat("Balancing prevalence in data for", sQuote(species), ":\n")
   cat("Pseudo-Absence ratio = ", round(npa/np,1), " (minimum ratio= ", rpa,")\n", sep="")
   print( c(Presences=np, Absences=np-npa, 'Pseudo-Absences'=npa) )
   
