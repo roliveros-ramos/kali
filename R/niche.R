@@ -28,12 +28,14 @@ plot.niche = function(x, vars, FUN=median, plot=TRUE, n=200, thr=NULL,
   return(invisible(out))
 }
 
-points.niche = function(x, vars, pch=".", col="black", alpha=0.9, ...) {
+points.niche = function(x, vars, pch=".", col="black", alpha=0.9, n=1, ...) {
+  if(n<0 | n>1) stop("n must be in [0,1].")
   dat = x$model[,vars]
   indN = which(x$model[, x$species] == 0)
   indP = which(x$model[, x$species] == 1)
   col = makeTransparent(col, alpha=alpha)
-  points(dat[indP, ], pch=pch, col=col, ...)
+  ind = sample(indP, size=floor(n*length(indP)), replace=FALSE)
+  points(dat[ind, ], pch=pch, col=col, ...)
   return(invisible())
 }
 
