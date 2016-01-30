@@ -11,19 +11,30 @@ calculateNiche = function(model, nmax=1e5, doIt=FALSE, ...) {
   newdata = do.call(expand.grid, values)
   newdata$niche = predict(model, newdata = newdata, type="response")
   if(nvars>=7 & !doIt) DateStamp("Ending at")
-  output = list(data=newdata, var=values)
+  fmla = .fmla2txt(mod0$formula)
+  species = as.character(mod0$formula[2])
+  output = list(data=newdata, var=values, model=model$model, species=species, formula=fmla)
   class(output) = c("niche")
   return(output)  
 }
 
 plot.niche = function(x, vars, FUN=median, plot=TRUE, n=200, thr=NULL, 
-                      type="prob", add=FALSE, col="black", lwd=2, bezier=TRUE,...) {
+                      type="prob", add=FALSE, col="black", lwd=2, bezier=TRUE, ...) {
   out = switch(type, 
                prob = .plotNicheProb(x=x, vars=vars, FUN=FUN, plot=plot, n=n, thr=thr, ...),
                hull = .plotNicheHull(x=x, vars=vars, FUN=FUN, plot=plot, n=n, thr=thr, 
                                      add=add, col=col, lwd=lwd, bezier=bezier, ...),
                stop("Invalid plot type."))
   return(invisible(out))
+}
+
+points.niche = function(x, vars, pch=".", col="black", alpha=0.9, ...) {
+  dat = x$model[,vars]
+  indN = which(x$model[, x$species] == 0)
+  indP = which(x$model[, x$species] == 1)
+  col = makeTransparent(col, alpha=alpha)
+  points(dat[indP, ], pch=pch, col=col, ...)
+  return(invisible())
 }
 
 .plotNicheProb = function(x, vars, FUN=median, plot=TRUE, n=200, thr=NULL, ...) {
