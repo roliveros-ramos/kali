@@ -89,25 +89,7 @@ points.niche = function(x, vars, pch=".", col="black", alpha=0.9, n=1, ...) {
   
   if(is.null(thr)) thr=0.5
   
-  old = list()
-  old$x = x$var[[vars[1]]]
-  old$y = x$var[[vars[2]]]
-  old$z = tapply(X=x$data$niche, INDEX=x$data[vars], FUN=FUN)
-  old$labs$x = vars[1]
-  old$labs$y = vars[2]
-  
-  nold = mean(length(old$x), length(old$y))
-  
-  if(nold<n) {
-    new = list()
-    new$x = pretty(old$x, n=n)
-    new$y = pretty(old$y, n=n)
-    new$z = interp.surface.grid(obj=old, grid.list=new)$z
-    new$labs = old$labs    
-    out = new
-  } else out = old
-  
-  out$z = toPA(out$z, thr=thr)
+  out = .plotNicheProb(x=x, vars=vars, FUN=FUN, plot=FALSE, n=n, thr=thr)
   
   coords = list()
   inside = which(out$z==1)
