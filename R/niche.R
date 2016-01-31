@@ -110,3 +110,34 @@ points.niche = function(x, vars, pch=".", col="black", alpha=0.9, n=1, ...) {
   }
   return(invisible(hull))
 }
+
+density.niche = function(x, var, plot=TRUE, vertical=FALSE,
+                         axes=TRUE, col=c("black", "grey"),
+                         lty=c(1,1), lwd=c(1,1), allData=TRUE,
+                         ...) {
+  dat = x$model[, var]
+  indP = which(x$model[, species]==1)
+  d1 = density(dat[indP])
+  d2 = density(dat)
+  if(isTRUE(plot)) {
+    plot.new()
+    if(!vertical) {
+      plot.window(xlim=range(pretty(dat)), 
+                  ylim=range(c(d1$y, d2$y)))
+      lines(d1$x, d1$y, col=col[1], lty=lty[1], lwd=lwd[1])
+      if(isTRUE(allData)) lines(d2$x, d2$y, col=col[2], lty=lty[2], lwd=lwd[2])
+      
+    } else {
+      plot.window(xlim=range(c(d1$y, d2$y)), 
+                  ylim=range(pretty(dat)))
+      lines(d1$y, d1$x, col=col[1], lty=lty[1], lwd=lwd[1])
+      if(isTRUE(allData)) lines(d2$y, d2$x, col=col[2], lty=lty[2], lwd=lwd[2])
+    }
+    if(isTRUE(axes)) {
+      axis(1)
+      axis(2)
+      box()
+    }
+  }
+  return(invisible(list(presence=d1, all=d2)))
+}
