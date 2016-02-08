@@ -1,6 +1,6 @@
 pretty.factor = function(x, ...) return(factor(levels(x)))
 
-calculateNiche = function(model, nmax=1e5, doIt=FALSE, ...) {
+calculateNiche = function(model, nmax=1e5, doIt=FALSE, req.sens=0.975, cost=list(FPC=1, FNC=10), ...) {
   nvars = length(model$var.summary)
   if(nvars>=7 & !doIt) 
     stop("Calculating the niche for more than 6 variables
@@ -13,7 +13,10 @@ calculateNiche = function(model, nmax=1e5, doIt=FALSE, ...) {
   if(nvars>=7 & !doIt) DateStamp("Ending at")
   fmla = .fmla2txt(model$formula)
   species = as.character(model$formula[2])
-  output = list(data=newdata, var=values, model=model$model, species=species, formula=fmla)
+  model$model$fitted = predict(model, newdata = model$model, type="response")
+  thr = calculateThresholds(data=model$model, coordNames=names(model$var.summary),
+                            models="fitted", obs=species, req.sens=req.sens, FPC=cost$FPC, FNC=cost$FPC)
+  output = list(data=newdata, var=values, model=model$model, species=species, formula=fmla, thr=thr)
   class(output) = c("niche")
   return(output)  
 }
@@ -87,7 +90,7 @@ points.niche = function(x, vars, pch=".", col="black", alpha=0.9, n=1, ...) {
 .plotNicheHull = function(x, vars, FUN=median, plot=TRUE, n=200, 
                           thr=NULL, add=FALSE, col="black", lwd=2, bezier=TRUE, ...) {
   
-  if(is.null(thr)) thr=0.5
+  if(is.null(thr)) thr=x$thr["ReqSens",]
   
   out = .plotNicheProb(x=x, vars=vars, FUN=FUN, plot=FALSE, n=n, thr=thr)
   
