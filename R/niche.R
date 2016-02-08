@@ -1,6 +1,6 @@
 pretty.factor = function(x, ...) return(factor(levels(x)))
 
-calculateNiche = function(model, nmax=1e5, doIt=FALSE, req.sens=0.975, cost=list(FPC=1, FNC=10), ...) {
+calculateNiche = function(model, nmax=1e5, doIt=FALSE, req.sens=0.95, cost=list(FPC=1, FNC=10), ...) {
   nvars = length(model$var.summary)
   if(nvars>=7 & !doIt) 
     stop("Calculating the niche for more than 6 variables
