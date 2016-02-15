@@ -269,7 +269,7 @@ fakeGAM2 = function(object) {
 }
 
 fitGAMs = function(object, formulas, FUN=identity, 
-                   name=NULL, link="logit") {
+                   name=NULL, link="logit", subset=NULL) {
   
   name = deparse(substitute(object))
   
@@ -278,9 +278,6 @@ fitGAMs = function(object, formulas, FUN=identity,
   
   gc(verbose=FALSE)
   
-  #   obj1 = deparse(eval(substitute(quote(object))))
-  #   obj2 = deparse(substitute(object, env=as.environment(-1)))
-  #   
   DateStamp("Fitting models for", sQuote(name), "dataset.")
   
   train = FUN(object$train)
@@ -311,7 +308,7 @@ fitGAMs = function(object, formulas, FUN=identity,
     object$formulas[[model.name]] = model.formula 
     #model.vars = .getModelVars2(model.formula, train)
     # TO_DO: filter complete cases
-    model = gam(model.formula, family = binomial(link=link), data = train)
+    model = gam(model.formula, family = binomial(link=link), data = train, subset=subset)
     gc(verbose=FALSE)
     model$anova = anova(model)
     model$call$family[2] = link
