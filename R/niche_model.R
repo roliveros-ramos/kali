@@ -1,16 +1,20 @@
 
 AUC = function(data, coordNames = c("lat", "lon"), obs="observed",
                models=NULL, st.dev=TRUE, na.rm=TRUE) {
-  
-  if(is.null(models)) models = !(names(data) %in% c(coordNames, obs))
+
+  modelNames = models
+  if(is.null(models)) {
+    models = which(!(names(data) %in% c(coordNames, obs)))
+    modelNames = names(data)[models]
+  }
   observed = data[,obs]
   if(is.factor(observed)) observed = as.numeric(as.character(observed))  
   DATA = data.frame(1, observed, data[,models])
   output = NULL
-  for(i in seq_len(sum(models))) {
+  for(i in seq_along(models)) {
     output = rbind(output, auc(DATA,st.dev=st.dev, which.model=i,na.rm=na.rm))
   }
-  rownames(output) = names(data)[models]
+  rownames(output) = modelNames
   
   return(output)
 }
@@ -18,18 +22,22 @@ AUC = function(data, coordNames = c("lat", "lon"), obs="observed",
 kappa = function(data, coordNames = c("lat", "lon"), obs="observed",
                  models=NULL, st.dev=TRUE, na.rm=TRUE) {
   
-  if(is.null(models)) models = !(names(data) %in% c(coordNames, obs))
+  modelNames = models
+  if(is.null(models)) {
+    models = which(!(names(data) %in% c(coordNames, obs)))
+    modelNames = names(data)[models]
+  }
   observed = data[,obs]
   if(is.factor(observed)) observed = as.numeric(as.character(observed))  
   DATA = data.frame(1, observed, data[,models])
   
   thr = as.numeric(optimal.thresholds(DATA=DATA, opt.methods="MaxKappa")[-1])
   output = NULL
-  for(i in seq_len(sum(models))) {
+  for(i in seq_along(models)) {
     output = rbind(output, Kappa(cmx(DATA,threshold=thr[i], which.model=i,
                                      na.rm=na.rm), st.dev=st.dev))
   }
-  rownames(output) = names(data)[models]
+  rownames(output) = modelNames
   
   return(output)
 }
@@ -37,14 +45,18 @@ kappa = function(data, coordNames = c("lat", "lon"), obs="observed",
 TSS = function(data, coordNames = c("lat", "lon"), obs="observed",
                models=NULL, st.dev=TRUE, na.rm=TRUE) {
   
-  if(is.null(models)) models = !(names(data) %in% c(coordNames, obs))
+  modelNames = models
+  if(is.null(models)) {
+    models = which(!(names(data) %in% c(coordNames, obs)))
+    modelNames = names(data)[models]
+  }
   observed = data[,obs]
   if(is.factor(observed)) observed = as.numeric(as.character(observed))  
   DATA = data.frame(1, observed, data[,models])
   
   thr = as.numeric(optimal.thresholds(DATA=DATA, opt.methods="MaxSens+Spec")[-1])
   output = NULL
-  for(i in seq_len(sum(models))) {
+  for(i in seq_along(models)) {
     CMX = cmx(DATA,threshold=thr[i], which.model=i, na.rm=na.rm)
     output = rbind(output, cbind(specificity(CMX, st.dev=st.dev), 
                                  sensitivity(CMX, st.dev=st.dev)))
@@ -57,7 +69,7 @@ TSS = function(data, coordNames = c("lat", "lon"), obs="observed",
     colnames(tss) = c("TSS")
   }
   output = cbind(tss, output)
-  rownames(output) = names(data)[models]
+  rownames(output) = modelNames
   
   return(output)
 }
@@ -269,7 +281,7 @@ fakeGAM2 = function(object) {
 }
 
 fitGAMs = function(object, formulas, FUN=identity, 
-                   name=NULL, link="logit", subset=NULL) {
+                   name=NULL, link="logit") {
   
   name = deparse(substitute(object))
   
@@ -282,7 +294,7 @@ fitGAMs = function(object, formulas, FUN=identity,
   
   train = FUN(object$train)
   val   = FUN(object$val)
-  
+
   if(!is.list(object$predicted)) object$predicted = NULL
   
   models = names(formulas)
@@ -308,7 +320,7 @@ fitGAMs = function(object, formulas, FUN=identity,
     object$formulas[[model.name]] = model.formula 
     #model.vars = .getModelVars2(model.formula, train)
     # TO_DO: filter complete cases
-    model = gam(model.formula, family = binomial(link=link), data = train, subset=subset)
+    model = gam(model.formula, data = train, family = binomial(link=link))
     gc(verbose=FALSE)
     model$anova = anova(model)
     model$call$family[2] = link
