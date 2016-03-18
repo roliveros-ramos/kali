@@ -281,7 +281,7 @@ fakeGAM2 = function(object) {
 }
 
 fitGAMs = function(object, formulas, FUN=identity, 
-                   name=NULL, link="logit", bigData=TRUE) {
+                   name=NULL, link="logit", bigData=FALSE) {
   
   name = deparse(substitute(object))
   
