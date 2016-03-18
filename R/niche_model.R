@@ -281,7 +281,7 @@ fakeGAM2 = function(object) {
 }
 
 fitGAMs = function(object, formulas, FUN=identity, 
-                   name=NULL, link="logit") {
+                   name=NULL, link="logit", bigData=TRUE) {
   
   name = deparse(substitute(object))
   
@@ -320,7 +320,12 @@ fitGAMs = function(object, formulas, FUN=identity,
     object$formulas[[model.name]] = model.formula 
     #model.vars = .getModelVars2(model.formula, train)
     # TO_DO: filter complete cases
-    model = gam(model.formula, data = train, family = binomial(link=link))
+    if(isTRUE(bigData)) {
+      model = mgcv::bam(model.formula, data = train, family = binomial(link=link))
+    } else {
+      model = mgcv::gam(model.formula, data = train, family = binomial(link=link))
+    }
+    
     gc(verbose=FALSE)
     model$anova = anova(model)
     model$call$family[2] = link
