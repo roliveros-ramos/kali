@@ -610,6 +610,35 @@ window.prediction.niche.models = function(x, start=NULL, end=NULL, frequency=NUL
   return(x)
 }
 
+subset.prediction.niche.models = function(x, lat=NULL, lon=NULL) {
+  
+  if(is.null(lat) & is.null(lon)) return(x)
+  
+  xlat = x$info$coords$lat
+  xlon = x$info$coords$lon
+  
+  if(is.null(lat)) lat = range(xlat)
+  if(is.null(lon)) lon = range(xlon)
+  
+  lat = sort(lat)
+  lon = sort(lon)
+  
+  indLat = xlat >= lat[1] & xlat <= lat[2]
+  indLon = xlon >= lon[1] & xlon <= lon[2]
+  
+  x$prediction = x$prediction[indLon, indLat, ]
+  x$info$coords$lon = xlon[indLon]
+  x$info$coords$lat = xlat[indLat]
+  
+  DateStamp("Computing climatologies for spatial domain...")
+  x$mean        = apply(x$prediction, 1:2, median, na.rm=TRUE)
+  x$sd          = apply(x$prediction, 1:2, sd, na.rm=TRUE)
+  x$climatology = climatology(x$prediction, x$info$time$month)
+  x$season      = climatology(x$prediction, x$info$time$season)
+  
+  return(x)
+}
+
 getModel = function(object, model.name) {
   
   dataset = deparse(substitute(object))
