@@ -166,7 +166,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
                     hires=FALSE, land.col="darkolivegreen4", sea.col="aliceblue", 
                     boundaries.col = "black", grid.col="white", grid=TRUE,
                     cex=0.5, pch=19, main=NULL, add=FALSE, axes=TRUE, 
-                    border=!axes, asp=NA, axs="i", xaxs=axs, yaxs=axs, ...) {
+                    border=!axes, asp=NA, axs="i", xaxs=axs, yaxs=axs, cex.axis=0.75, ...) {
   
   if(missing(x)) x = NA
   if(is.data.frame(x) & is.null(y)) {
@@ -200,7 +200,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
     .plotSea(col=sea.col)
     mapDetails(center=center, hires=hires,col=land.col, interior=FALSE, 
                axes=axes, border=border, boundaries.col=boundaries.col,
-               grid=grid, grid.col=grid.col)    
+               grid=grid, grid.col=grid.col, cex.axis=cex.axis)    
     title(main=main)
   }
   points(xy, cex=cex, pch=pch, ...)
@@ -213,7 +213,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
 
 mapDetails = function(center=0, hires=FALSE, col="black", interior=FALSE, 
                       axes=TRUE, border=TRUE, boundaries.col="black",
-                      grid=TRUE, grid.col="white", ...) {
+                      grid=TRUE, grid.col="white", cex.axis=0.75, ...) {
   
   mapa = if (hires) {
     require(mapdata)
@@ -229,7 +229,7 @@ mapDetails = function(center=0, hires=FALSE, col="black", interior=FALSE,
   map2(mapa, center = center, fill = TRUE, col = col, add = TRUE, 
        interior=interior, border=boundaries.col, ...)
   if(axes) {
-    map.axes2()
+    map.axes2(cex.axis=cex.axis)
     mtext("LONGITUDE", 1, line = 1.8, cex = 0.9*par("cex"))
     mtext("LATITUDE", 2, line = 2.4, cex = 0.9*par("cex"))    
   } else {

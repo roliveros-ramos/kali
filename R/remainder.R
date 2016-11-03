@@ -327,6 +327,52 @@ extractData = function(files, data, lat, lon, start, end,
 
 extractEnvData = extractData
 
+extractData2 = function(files, data, lat, lon, start, end, 
+                       dx, dy=dx, frequency=12, 
+                       dim.names = c("lat", "lon", "time"),
+                       verbose=TRUE) {
+  
+  if(dim.names[1] %in% names(data))
+    coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy)
+  times  = createTimeAxis(start=start, end=end, frequency=frequency, center=TRUE)
+  
+  latAsFactor  = cut(data[, dim.names[1]], coords$psi$lat, labels=FALSE)
+  lonAsFactor  = cut(data[, dim.names[2]], coords$psi$lon, labels=FALSE)
+  timeAsFactor = cut(data[, dim.names[3]], times$bounds, labels=FALSE)
+  
+  ix  = cbind(lonAsFactor, latAsFactor, timeAsFactor)
+  ix2 = cbind(lonAsFactor, latAsFactor)
+  
+  control.dim = c(length(coords$rho$lon),
+                  length(coords$rho$lat),
+                  length(times$center))                  
+  
+  for(file in files) {
+    if(isTRUE(verbose)) cat("Reading", file,"...\n")
+    data1 = nc_open(file)
+    for(var in names(data1$var)) {
+      if(!identical(data1$var[[var]]$varsize, control.dim)) {
+        if(identical(data1$var[[var]]$varsize, control.dim[1:2])) {
+          if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(var, data1),"\n")
+          data[, var] = ncvar_get(data1, var)[ix2]  
+        } else {
+          if(isTRUE(verbose)) cat("Skipping variable", sQuote(var),"(Dimensions do not match.)\n")  
+          next  
+        }
+      } else {
+        if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(var, data1),"\n")
+        data[, var] = ncvar_get(data1, var)[ix]
+      }
+    }
+    nc_close(data1)
+    gc(verbose=FALSE)
+  }
+  if(isTRUE(verbose)) cat("Writing final data base.\n\n")
+  
+  return(data)
+}
+
+
 table2ncdf = function(file, species, 
                       lat, lon, dx, dy,
                       start, end, frequency=12,
@@ -1203,7 +1249,7 @@ createPredictionFiles = function(files, aux.files=NULL, lat, lon, start, end,
     DateStamp("Time step", t, ":", as.numeric(dates[t,1:2]), "\t\t")
     xy$time =  dates$time[t]
     xy$month = dates$month[t]
-    out = extractData(files=files, data=xy, 
+    out = extractData2(files=files, data=xy, 
                       lat=lat, lon=lon, start=start, end=end, dx=dx, dy=dy,
                       verbose=verbose)
     
@@ -1239,7 +1285,7 @@ createAuxPredictionFiles = function(files, lat, lon, start, end,
   out$lat  = round(out$lat, 3)
   out$time =  start[1] + 14/365
   
-  out = extractData(files=files, data=out, 
+  out = extractData2(files=files, data=out, 
                     lat=lat, lon=lon, start=start, end=end, dx=dx, dy=dy,
                     verbose=verbose)
   

@@ -355,6 +355,84 @@ fitGAMs = function(object, formulas, FUN=identity,
   return(object)
 }
 
+
+
+fitGAMs = function(object, formulas, FUN=identity, 
+                   name=NULL, link="logit", bigData=FALSE) {
+  
+  name = deparse(substitute(object))
+  
+  FUN = match.fun(FUN)
+  object$transform = FUN
+  
+  gc(verbose=FALSE)
+  
+  DateStamp("Fitting models for", sQuote(name), "dataset.")
+  
+  train = FUN(object$train)
+  val   = FUN(object$val)
+  
+  if(!is.list(object$predicted)) object$predicted = NULL
+  
+  models = names(formulas)
+  
+  aic = object$fit[,"AIC"]
+  bic = object$fit[,"BIC"]
+  var = as.character(formulas[[1]])[2]
+  
+  object$predicted$lon = object$train[,"lon"]
+  object$predicted$lat = object$train[,"lat"]
+  object$predicted$observed = as.numeric(as.character(object$train[,var]))
+  object$predicted = as.data.frame(object$predicted)
+  
+  object$validation$lon = object$val[,"lon"]
+  object$validation$lat = object$val[,"lat"]
+  object$validation$observed = as.numeric(as.character(object$val[,var]))
+  object$validation = as.data.frame(object$validation)
+  
+  for(i in seq_along(formulas)) {
+    model.name = models[i]
+    model.formula = formulas[[i]]
+    DateStamp("Training model ", model.name, ":\n", .fmla2txt(formulas[[i]]), sep="")
+    object$formulas[[model.name]] = model.formula 
+    #model.vars = .getModelVars2(model.formula, train)
+    # TO_DO: filter complete cases
+    if(isTRUE(bigData)) {
+      model = mgcv::bam(model.formula, data = train, family = binomial(link=link))
+    } else {
+      model = mgcv::gam(model.formula, data = train, family = binomial(link=link))
+    }
+    
+    gc(verbose=FALSE)
+    model$anova = anova(model)
+    model$call$family[2] = link
+    object$models[[model.name]] = model
+    # object$preplot[[models[i]]] = with(object$train, preplot(model))
+    
+    aic[model.name] = AIC(model)
+    bic[model.name] = BIC(model)
+    object$predicted[, model.name] = predict(model, newdata=train, type="response")
+    object$validation[, model.name] = predict(model, newdata=val, type="response")
+  }
+  
+  DateStamp("Computing Predictive Performance...")
+  
+  object$fit = cbind(AIC=aic, BIC=bic)
+  
+  object$performance$training   = PredictivePerformance(object$predicted, st.dev=FALSE)
+  object$performance$validation = PredictivePerformance(object$validation, st.dev=FALSE)
+  
+  object$threshold$training  = calculateThresholds(object$predicted)
+  object$threshold$validation = calculateThresholds(object$validation)
+  
+  DateStamp("DONE.")
+  
+  class(object$formulas) = c("niche.models.formulas", class(object$formulas))
+  
+  return(object)
+}
+
+
 getPredictions = function(data) {
   
   if(is.list(data$predicted)) return(do.call(cbind, data$predicted)) else return(invisible(NULL))
@@ -599,7 +677,7 @@ getMap.prediction.niche.models = function(object, date, toPA=FALSE, prob=FALSE,
 
 plot.prediction.niche.models = function(x, y=NULL, date=NULL, 
                                         slice=NULL, type=NULL, mfclim=c(3,4), 
-                                        mar=c(4,4,1,1),
+                                        mar=c(4,4,1,1), oma=c(1,1,1,1),
                                         toPA=FALSE, prob=FALSE, criteria="MinROCdist", 
                                         png=FALSE, pdf=FALSE, filename=NULL, 
                                         width=800, height=800, res=NA, ...) {
@@ -639,7 +717,7 @@ plot.prediction.niche.models = function(x, y=NULL, date=NULL,
     filename = .getPngFileName(filename, gsub(" ", "", time.lab))
   } else {
     if(type=="climatology") {
-      par(mfrow=mfclim, mar=mar)
+      par(mfrow=mfclim, mar=mar, oma=oma)
       z = x$climatology/x$info$factor
       if(toPA) z = toPA(z, thr, prob=prob)
       for(i in 1:12) {
@@ -653,7 +731,7 @@ plot.prediction.niche.models = function(x, y=NULL, date=NULL,
     }
     
     if(type=="seasonal") {
-      par(mfrow=c(2,2), mar=mar)
+      par(mfrow=c(2,2), mar=mar, oma=oma)
       z = x$season/x$info$factor
       if(toPA) z = toPA(z, thr, prob=prob)
       slab = toupper(dimnames(x$season)[[3]])
