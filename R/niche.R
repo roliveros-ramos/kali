@@ -14,10 +14,10 @@ calculateNiche = function(model, nmax=1e5, doIt=FALSE, req.sens=0.95, cost=list(
   fmla = .fmla2txt(model$formula)
   species = as.character(model$formula[2])
   model$model$fitted = predict(model, newdata = model$model, type="response")
-  thr = calculateThresholds(data=model$model, coordNames=names(model$var.summary),
-                            models="fitted", obs=species, req.sens=req.sens, FPC=cost$FPC, FNC=cost$FPC)
-  performance = PredictivePerformance(data=model$model, coordNames=names(model$var.summary),
-                                      models="fitted", obs=species, st.dev=FALSE)
+  thr = try(calculateThresholds(data=model$model, coordNames=names(model$var.summary),
+                            models="fitted", obs=species, req.sens=req.sens, FPC=cost$FPC, FNC=cost$FPC))
+  performance = try(PredictivePerformance(data=model$model, coordNames=names(model$var.summary),
+                                      models="fitted", obs=species, st.dev=FALSE))
   output = list(data=newdata, var=values, model=model$model, species=species, formula=fmla, thr=thr,
                 performance=performance)
   class(output) = c("niche")
