@@ -280,81 +280,6 @@ fakeGAM2 = function(object) {
   return(obj)
 }
 
-fitGAMs = function(object, formulas, FUN=identity, 
-                   name=NULL, link="logit", bigData=FALSE) {
-  
-  name = deparse(substitute(object))
-  
-  FUN = match.fun(FUN)
-  object$transform = FUN
-  
-  gc(verbose=FALSE)
-  
-  DateStamp("Fitting models for", sQuote(name), "dataset.")
-  
-  train = FUN(object$train)
-  val   = FUN(object$val)
-
-  if(!is.list(object$predicted)) object$predicted = NULL
-  
-  models = names(formulas)
-  
-  aic = object$fit[,"AIC"]
-  bic = object$fit[,"BIC"]
-  var = as.character(formulas[[1]])[2]
-  
-  object$predicted$lon = object$train[,"lon"]
-  object$predicted$lat = object$train[,"lat"]
-  object$predicted$observed = as.numeric(as.character(object$train[,var]))
-  object$predicted = as.data.frame(object$predicted)
-  
-  object$validation$lon = object$val[,"lon"]
-  object$validation$lat = object$val[,"lat"]
-  object$validation$observed = as.numeric(as.character(object$val[,var]))
-  object$validation = as.data.frame(object$validation)
-  
-  for(i in seq_along(formulas)) {
-    model.name = models[i]
-    model.formula = formulas[[i]]
-    DateStamp("Training model ", model.name, ":\n", .fmla2txt(formulas[[i]]), sep="")
-    object$formulas[[model.name]] = model.formula 
-    #model.vars = .getModelVars2(model.formula, train)
-    # TO_DO: filter complete cases
-    if(isTRUE(bigData)) {
-      model = mgcv::bam(model.formula, data = train, family = binomial(link=link))
-    } else {
-      model = mgcv::gam(model.formula, data = train, family = binomial(link=link))
-    }
-    
-    gc(verbose=FALSE)
-    model$anova = anova(model)
-    model$call$family[2] = link
-    object$models[[model.name]] = model
-    # object$preplot[[models[i]]] = with(object$train, preplot(model))
-    
-    aic[model.name] = AIC(model)
-    bic[model.name] = BIC(model)
-    object$predicted[, model.name] = predict(model, newdata=train, type="response")
-    object$validation[, model.name] = predict(model, newdata=val, type="response")
-  }
-  
-  DateStamp("Computing Predictive Performance...")
-  
-  object$fit = cbind(AIC=aic, BIC=bic)
-  
-  object$performance$training   = PredictivePerformance(object$predicted, st.dev=FALSE)
-  object$performance$validation = PredictivePerformance(object$validation, st.dev=FALSE)
-  
-  object$threshold$training  = calculateThresholds(object$predicted)
-  object$threshold$validation = calculateThresholds(object$validation)
-  
-  DateStamp("DONE.")
-  
-  class(object$formulas) = c("niche.models.formulas", class(object$formulas))
-  
-  return(object)
-}
-
 
 
 fitGAMs = function(object, formulas, FUN=identity, 
@@ -431,6 +356,8 @@ fitGAMs = function(object, formulas, FUN=identity,
   
   return(object)
 }
+
+
 
 
 getPredictions = function(data) {
@@ -477,7 +404,8 @@ print.niche.models = function(x, ...) {
 }
 
 predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius=1,
-                                precision=3, interp=!is.null(mask), FUN=identity,...) {
+                                precision=3, interp=!is.null(mask), FUN=identity,
+                                req.sens=0.90, cost=list(FPC=1, FNC=10), ...) {
   
   if(!is.null(object$transform)) FUN0 = match.fun(object$transform)
   FUN  = match.fun(FUN)
@@ -491,6 +419,22 @@ predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius
     model = getBestModel(object)
   }
   
+  DateStamp("Calculating limiting variables")
+  # limiting variables
+  values = lapply(model$var.summary, xrange, n=10)
+  newdata = do.call(expand.grid, values)
+  newdata$niche = predict(model, newdata = newdata, type="response")
+  species = as.character(model$formula[2])
+  model$model$fitted = predict(model, newdata = model$model, type="response")
+  thr = try(calculateThresholds(data=model$model, coordNames=names(model$var.summary),
+                                models="fitted", obs=species, req.sens=req.sens, FPC=cost$FPC, FNC=cost$FPC))
+  values = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], quantile, 
+                  probs=c(0.025, 0.975))
+  xvar = which(names(newdata) %in% names(values))
+  limiting = matrix(nrow=length(pred.info$files), ncol=length(xvar)-1)
+  
+ 
+  # end limiting variables
   
   if(!is.null(pred.info$aux)) aux = read.csv(pred.info$aux)
   
@@ -513,6 +457,7 @@ predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius
       lat = sort(unique(newdata$lat))
       
       coords = list(lon=lon, lat=lat)
+      
     }
     
     if(!is.null(pred.info$aux)) {
@@ -539,7 +484,15 @@ predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius
     temp = as.integer(round(factor*temp,3))
     pred[,,i][ind] = temp 
     
+    # begin limiting variables
+    limiting[i, ] = limitingFactor(data=newdata, ranges=values)
+    # end limiting variables
   }
+  
+  xvar = which(names(newdata) %in% names(values))
+  colnames(limiting) = names(newdata)[xvar]
+  rownames(limiting) = round(pred.info$time$center, 2)
+  
   
   if(!identical(dim(pred)[1:2], dim(mask)) & interp) {
     warning("'map' and 'mask' dimensions don't agree. Cannot perform interpolation")
@@ -571,7 +524,7 @@ predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius
   pred.season = climatology(pred, info$time$season)
   
   output = list(prediction=pred, info=info, mean=pred.mean, sd=pred.sd,
-                climatology=pred.clim, season=pred.season)
+                climatology=pred.clim, season=pred.season, limiting=limiting)
   
   DateStamp("DONE.")
   
@@ -793,7 +746,7 @@ saveAnimation.prediction.niche.models = function(object, file, dir=getwd(), inte
   n = dim(object$prediction)[3]
   DateStamp("\nCreating animation (",n," time steps).", sep="")  
   
-  try(saveGIF(
+  try(suppressMessages(saveGIF(
     {
       for(i in seq_len(n)) {
         cat(i,"")
@@ -802,10 +755,11 @@ saveAnimation.prediction.niche.models = function(object, file, dir=getwd(), inte
       },
     movie.name="temp.gif",
     img.name="niche_model", clean=TRUE, verbose=FALSE, 
-    interval=interval, loop=1, check=TRUE, autobrowse=FALSE),
+    interval=interval, loop=1, check=TRUE, autobrowse=FALSE)),
     silent=TRUE)
-  tmp = file.path(ani.options("outdir"), "temp.gif")
-  x = file.copy(from=tmp, file.path(dir, file), overwrite=TRUE)
+  tmp = file.path("temp.gif")
+  x = file.copy(from=tmp, to=file.path(dir, file), overwrite=TRUE)
+  file.remove(tmp)
   DateStamp("DONE.")
   
   return(invisible(x))
@@ -934,7 +888,9 @@ fillMap = function(object, mask, radius=1, ...) {
 
 fillMap.matrix = function(object, mask, radius=1) {
   
-  if(!all(is.na(object))) {
+  allNA  = all(is.na(object))
+  noMiss = !any(is.na(object)&!is.na(mask)) 
+  if(!allNA & !noMiss) {
     if(!identical(dim(object), dim(mask))) stop("'object' and 'mask' dimension must agree.")
     coords = map2coord(object)
     ind    = is.na(object)&!is.na(mask)

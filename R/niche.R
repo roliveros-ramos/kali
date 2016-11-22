@@ -1,25 +1,54 @@
 pretty.factor = function(x, ...) return(factor(levels(x)))
 
-calculateNiche = function(model, nmax=1e5, doIt=FALSE, req.sens=0.95, cost=list(FPC=1, FNC=10), ...) {
+xrange = function(x, n) {
+  UseMethod("xrange")
+}
+
+xrange.default = function(x, n) {
+  xr = range(pretty(x, n=100), na.rm=TRUE)
+  out  = seq(from=xr[1], to=xr[2], length.out=n)
+  return(out)
+} 
+
+xrange.factor = function(x, n) return(factor(levels(droplevels(x))))
+quantile.factor = function(x, n) return(factor(levels(droplevels(x))))
+
+calculateNiche = function(model, nmax=1e5, doIt=FALSE, req.sens=0.90, 
+                          cost=list(FPC=1, FNC=10), alpha=0.95, ...) {
   nvars = length(model$var.summary)
   if(nvars>=7 & !doIt) 
     stop("Calculating the niche for more than 6 variables
          may take a long time, set doIt=TRUE to proceed.")
   if(nvars>=7 & !doIt) DateStamp("Starting...")
-  n = max(min(100, floor((nmax)^(1/nvars))), 10)
-  values = lapply(model$var.summary, pretty, n=n)
+  
+  n  = floor(max(min(100, floor((nmax)^(1/nvars))), 10))
+
+  # first exploration to set limits
+  values = lapply(model$var.summary, xrange, n=n/3)
   newdata = do.call(expand.grid, values)
   newdata$niche = predict(model, newdata = newdata, type="response")
-  if(nvars>=7 & !doIt) DateStamp("Ending at")
+
   fmla = .fmla2txt(model$formula)
   species = as.character(model$formula[2])
   model$model$fitted = predict(model, newdata = model$model, type="response")
   thr = try(calculateThresholds(data=model$model, coordNames=names(model$var.summary),
-                            models="fitted", obs=species, req.sens=req.sens, FPC=cost$FPC, FNC=cost$FPC))
+                                models="fitted", obs=species, req.sens=req.sens, FPC=cost$FPC, FNC=cost$FPC))
+  
+  # final calculation within limits
+  values = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], xrange, n=n)
+  delta  = (1-alpha)/2
+  ranges = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], quantile, 
+                  probs=c(delta, 1-delta))
+  
+  newdata = do.call(expand.grid, values)
+  newdata$niche = predict(model, newdata = newdata, type="response")
+  
+  if(nvars>=7 & !doIt) DateStamp("Ending at")
+  
   performance = try(PredictivePerformance(data=model$model, coordNames=names(model$var.summary),
-                                      models="fitted", obs=species, st.dev=FALSE))
+                                          models="fitted", obs=species, st.dev=FALSE))
   output = list(data=newdata, var=values, model=model$model, species=species, formula=fmla, thr=thr,
-                performance=performance)
+                performance=performance, tolerance=ranges)
   class(output) = c("niche")
   return(output)  
 }
@@ -45,8 +74,8 @@ points.niche = function(x, vars, pch=".", col="black", alpha=0.9, n=1, ...) {
   return(invisible())
 }
 
-.plotNicheProb = function(x, vars, FUN=median, plot=TRUE, n=200, thr=NULL, ...) {
-  
+.plotNicheProb = function(x, vars, FUN=mean, plot=TRUE, n=200, thr=NULL, ...) {
+
   old = list()
   old$x = x$var[[vars[1]]]
   old$y = x$var[[vars[2]]]
@@ -93,7 +122,7 @@ points.niche = function(x, vars, pch=".", col="black", alpha=0.9, n=1, ...) {
 .plotNicheHull = function(x, vars, FUN=median, plot=TRUE, n=200, 
                           thr=NULL, add=FALSE, col="black", lwd=2, bezier=TRUE, ...) {
   
-  if(is.null(thr)) thr=x$thr["ReqSens",]
+  if(is.null(thr)) thr=x$thr["ReqSpec",]
   
   out = .plotNicheProb(x=x, vars=vars, FUN=FUN, plot=FALSE, n=n, thr=thr)
   
@@ -109,7 +138,7 @@ points.niche = function(x, vars, pch=".", col="black", alpha=0.9, n=1, ...) {
     if(!isTRUE(add)) {
       plot.new()
       plot.window(xlim=range(out$x), ylim=range(out$y))
-      title(xlab=out$labs$x, ylab=out$labs$y)
+      # title(xlab=out$labs$x, ylab=out$labs$y)
       axis(1); axis(2); box()
     }
     lines(hull, col=col, lwd=lwd, ...)    

@@ -755,10 +755,24 @@ read.Herve = function(file, skip=9, units=TRUE, k=1000, output=".") {
 
 DateStamp = function(...) cat(..., "\t\t | ", date(), "\n\n")
 
-is.inside = function(x, range) {
-  
+isInside = function(x, range, value=FALSE, prob=FALSE) {
   ind = (x >= range[1]) & (x <= range[2])
+  if(isTRUE(prob)) {
+    if(all(is.na(x))) return(NA)
+    return(sum(ind, na.rm=TRUE)/length(ind)) 
+  }
+  if(isTRUE(value)) return(x[which(ind)]) 
   return(ind)
+}
+
+
+limitingFactor = function(data, ranges) {
+  vars = names(data)[names(data) %in% names(ranges)]
+  ranges = ranges[vars]
+  .getProp = function(var, data, ranges) 
+    isInside(x=data[, var], range=ranges[[var]], prob=TRUE)
+  out = sapply(vars, FUN=.getProp, data=data, ranges=ranges)
+  return(out)
 }
 
 geq = function(x, thr) {
@@ -829,7 +843,7 @@ saveAnimation.default = function(object, file, dir=getwd(),
   n = dim(object)[3]
   DateStamp("\nCreating animation (",n," time steps).", sep="")
   
-  try(saveGIF(
+  try(suppressMessages(saveGIF(
     {
       for(i in seq_len(n)) {
         cat(i,"")
@@ -838,10 +852,10 @@ saveAnimation.default = function(object, file, dir=getwd(),
       },
     movie.name="temp.gif",
     img.name="slice", clean=TRUE, verbose=FALSE, 
-    interval=interval, loop=1, check=TRUE, autobrowse=FALSE),
+    interval=interval, loop=1, check=TRUE, autobrowse=FALSE)),
     silent=TRUE)
-  tmp = file.path(ani.options("outdir"), "temp.gif")
-  x = file.copy(from=tmp, file.path(dir, file), overwrite=TRUE)
+  tmp = file.path("temp.gif")
+  x = file.copy(from=tmp, to=file.path(dir, file), overwrite=TRUE)
   DateStamp("DONE.")
   
   return(invisible(x))
@@ -1137,8 +1151,8 @@ year2month = function(data, year=seq_along(data), month) {
 
 .removeSector3 = function(x, coords, lon, lat) {
   
-  xlat = is.inside(coords$lat, lat)
-  xlon = is.inside(coords$lon, lon)
+  xlat = isInside(coords$lat, lat)
+  xlon = isInside(coords$lon, lon)
   xpred = x
   
   if(!is.null(lat) & !is.null(lon)) {
@@ -1158,8 +1172,8 @@ year2month = function(data, year=seq_along(data), month) {
 
 .removeSector2 = function(x, coords, lon, lat) {
   
-  xlat = is.inside(coords$lat, lat)
-  xlon = is.inside(coords$lon, lon)
+  xlat = isInside(coords$lat, lat)
+  xlon = isInside(coords$lon, lon)
   xpred = x
   
   if(!is.null(lat) & !is.null(lon)) {
