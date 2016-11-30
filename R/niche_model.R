@@ -533,6 +533,7 @@ predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius
   return(output)
 }
 
+
 window.prediction.niche.models = function(x, start=NULL, end=NULL, frequency=NULL, 
                                           deltat=NULL, extend=FALSE, ...) {
   
