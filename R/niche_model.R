@@ -887,7 +887,7 @@ fillMap = function(object, mask, radius=1, ...) {
   UseMethod("fillMap")
 }
 
-fillMap.matrix = function(object, mask, radius=1) {
+fillMap.matrix = function(object, mask, radius=1, fill.value=0) {
   
   allNA  = all(is.na(object))
   noMiss = !any(is.na(object)&!is.na(mask)) 
@@ -901,7 +901,7 @@ fillMap.matrix = function(object, mask, radius=1) {
     map2[ind] = fill$z
     fill   = as.data.frame(fill)
     fill$z[is.na(fill$z)] = fillSquare(x=fill, map=map2, radius=radius)
-    fill$z[is.na(fill$z)] = 0 # just in case!
+    fill$z[is.na(fill$z)] = fill.value # just in case!
     map2[ind] = fill$z
     map2[is.na(mask)] = NA
   } else {

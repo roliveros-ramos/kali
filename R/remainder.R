@@ -166,12 +166,6 @@ getIsoline = function(lon, lat, z, level, cutoff=0) {
 }
 
 
-
-
-
-
-
-
 extractValidData = function(files, control, var="traj", output=NULL) {
   
   # files is a set of ncdf files paths
@@ -645,7 +639,7 @@ getDistance = function (data, ref, ref2abs = NULL, lon = "lon", lat = "lat",
   ncols = 1 + isTRUE(index.return) + !is.null(ref2abs)
   output = array(dim = c(nrow(dat), ncols))
   ind = which(complete.cases(xy))
-  output[ind, ] = .getDistance(xy = xy[ind, ], ref = ref, 
+  output[ind, ] = .getDistance(xy = xy[ind, ,drop=FALSE], ref = ref, 
                                ref2abs = ref2abs,
                                index.return=index.return) 
   output[, 1] = output[, 1] * grados2km

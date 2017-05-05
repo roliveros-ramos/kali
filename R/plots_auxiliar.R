@@ -1,8 +1,15 @@
 # create grid axes (lat, lon)
-createGridAxes = function(lat,lon, dx, dy=dx) {
+createGridAxes = function(lat,lon, dx, dy=dx, center=FALSE) {
   # Create a rectangular grid given lat, lon and dxy.
   # No correction by Earth curvature
   if(dx <= 0 || dy <= 0) stop("dx and dy must be positive.")
+  
+  if(isTRUE(center)) {
+    lat[which.min(lat)] = lat[which.min(lat)] + 0.5*dy
+    lat[which.max(lat)] = lat[which.max(lat)] - 0.5*dy
+    lon[which.min(lon)] = lon[which.min(lon)] + 0.5*dx
+    lon[which.max(lon)] = lon[which.max(lon)] - 0.5*dx
+  }
   
   lats.rho = seq(from=min(lat),to=max(lat),by=dy)
   lons.rho = seq(from=min(lon),to=max(lon),by=dx)

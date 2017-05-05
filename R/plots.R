@@ -166,7 +166,8 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
                     hires=FALSE, land.col="darkolivegreen4", sea.col="aliceblue", 
                     boundaries.col = "black", grid.col="white", grid=TRUE,
                     cex=0.5, pch=19, main=NULL, add=FALSE, axes=TRUE, 
-                    border=!axes, asp=NA, axs="i", xaxs=axs, yaxs=axs, cex.axis=0.75, ...) {
+                    border=!axes, asp=NA, axs="i", xaxs=axs, yaxs=axs, cex.axis=0.75, 
+                    interior=FALSE, fill=TRUE, ...) {
   
   if(missing(x)) x = NA
   if(is.data.frame(x) & is.null(y)) {
@@ -198,9 +199,9 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
     plot.new()
     plot.window(xlim=xlim, ylim=ylim, xaxs=xaxs, yaxs=yaxs, asp=asp)
     .plotSea(col=sea.col)
-    mapDetails(center=center, hires=hires,col=land.col, interior=FALSE, 
+    mapDetails(center=center, hires=hires, col=land.col, interior=interior, 
                axes=axes, border=border, boundaries.col=boundaries.col,
-               grid=grid, grid.col=grid.col, cex.axis=cex.axis)    
+               grid=grid, grid.col=grid.col, cex.axis=cex.axis, fill=fill)    
     title(main=main)
   }
   points(xy, cex=cex, pch=pch, ...)
@@ -213,7 +214,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
 
 mapDetails = function(center=0, hires=FALSE, col="black", interior=FALSE, 
                       axes=TRUE, border=TRUE, boundaries.col="black",
-                      grid=TRUE, grid.col="white", cex.axis=0.75, ...) {
+                      grid=TRUE, grid.col="white", cex.axis=0.75, fill=TRUE, ...) {
   
   mapa = if (hires) {
     require(mapdata)
@@ -226,7 +227,7 @@ mapDetails = function(center=0, hires=FALSE, col="black", interior=FALSE,
   
   if(isTRUE(grid)) grid(col=grid.col, lty=1)
   
-  map2(mapa, center = center, fill = TRUE, col = col, add = TRUE, 
+  map2(mapa, center = center, fill = fill, col = col, add = TRUE, 
        interior=interior, border=boundaries.col, ...)
   if(axes) {
     map.axes2(cex.axis=cex.axis)

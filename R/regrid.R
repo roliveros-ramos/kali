@@ -22,7 +22,7 @@ regrid.matrix = function(object, old, new, mask=NULL, ...) {
   new$y = new$lat
   
   newp = interp.surface.grid(obj=old, grid.list=new, ...)$z
-  newmap = newp*mask
+  newmap = if(!is.null(mask)) newp*mask else newp
   
   return(newmap)
 }

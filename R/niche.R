@@ -63,14 +63,35 @@ plot.niche = function(x, vars, FUN=median, plot=TRUE, n=200, thr=NULL,
   return(invisible(out))
 }
 
-points.niche = function(x, vars, pch=".", col="black", alpha=0.9, n=1, ...) {
+points.niche = function(x, vars, pch=".", col=c("black", "grey"), alpha=0.9, n=1, 
+                        what="presence", ...) {
+
+  what = match.arg(arg=what, choices=c("presence", "absence", "both"))
+
+  col = makeTransparent(col, alpha=alpha)
+  
+  if(what=="both" & length(col)!=2) stop("Argument 'col' has to be length 2.") 
+  usePositive = if(what=="presence") TRUE else FALSE
+  useNegative = if(what=="absence") TRUE else FALSE
+  if(what=="both") {
+    usePositive = TRUE 
+    useNegative = TRUE
+    colP = col[1]
+    colN = col[2]
+  } else colP = colN = col[1]
+  
   if(n<0 | n>1) stop("n must be in [0,1].")
   dat = x$model[,vars]
+  
   indN = which(x$model[, x$species] == 0)
+  indN = sample(indN, size=floor(n*length(indN)), replace=FALSE)
+  
   indP = which(x$model[, x$species] == 1)
-  col = makeTransparent(col, alpha=alpha)
-  ind = sample(indP, size=floor(n*length(indP)), replace=FALSE)
-  points(dat[ind, ], pch=pch, col=col, ...)
+  indP = sample(indP, size=floor(n*length(indP)), replace=FALSE)
+  
+  if(useNegative) points(dat[indN, ], pch=pch, col=colN, ...)
+  if(usePositive) points(dat[indP, ], pch=pch, col=colP, ...)
+  
   return(invisible())
 }
 
