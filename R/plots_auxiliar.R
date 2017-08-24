@@ -40,7 +40,8 @@ createGridAxes = function(lat,lon, dx, dy=dx, center=FALSE) {
 }
 
 # create time axis
-createTimeAxis = function(start, end, frequency=12, center=FALSE, shift=TRUE) {
+createTimeAxis = function(start, end, frequency=12, center=FALSE, shift=TRUE,
+                          day=1) {
   
   times  = seq(from=start[1] + (start[2]-1)/frequency, 
                to= end[1] + end[2]/frequency, by=1/frequency)
@@ -54,9 +55,11 @@ createTimeAxis = function(start, end, frequency=12, center=FALSE, shift=TRUE) {
     out$season[out$season %in% seasons[2,]] = "fall"
     out$season[out$season %in% seasons[3,]] = "winter"
     out$season[out$season %in% seasons[4,]] = "spring"
+    out$dates = as.Date(paste(out$year, out$month, 1, sep="-"))
+    out$start = out$year + 
+      (lubridate::yday(out$dates)-1)/(365+lubridate::leap_year(out$year))
     times = out
   } 
-  
   return(times)
 }
 
