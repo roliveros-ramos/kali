@@ -97,16 +97,17 @@ table2grid = function(data, var, lat, lon, dx=dy, dy=dx, FUN=sum, ...) {
 
 # convert a data.frame to an array
 table2array = function(data, var, lat, lon, start, end, 
-                       dx, dy=dx, frequency=12, FUN=sum, toPA=FALSE) {
+                       dx, dy=dx, frequency=12, FUN=sum, toPA=FALSE,
+                       varNames=c("lat", "lon", "time")) {
   
   FUN = match.fun(FUN)
   
   coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy)
   times  = createTimeAxis(start=start, end=end, frequency=frequency, center=TRUE)
   
-  latAsFactor  = cut(data[,"lat"], coords$psi$lat, labels=FALSE)
-  lonAsFactor  = cut(data[,"lon"], coords$psi$lon, labels=FALSE)
-  timeAsFactor = cut(data[,"time"], times$bounds, labels=FALSE)
+  latAsFactor  = cut(data[, varNames[1]], coords$psi$lat, labels=FALSE)
+  lonAsFactor  = cut(data[, varNames[2]], coords$psi$lon, labels=FALSE)
+  timeAsFactor = cut(data[, varNames[3]], times$bounds, labels=FALSE)
   
   map0 = tapply(data[,var], INDEX=list(latAsFactor, lonAsFactor, timeAsFactor),
                 FUN=FUN, na.rm=TRUE)
@@ -274,6 +275,7 @@ ncdf2data = function(files, slices, control, var, control.dim=NULL) {
   return(output)
 }
 
+
 extractData = function(files, data, lat, lon, start, end, 
                        dx, dy=dx, frequency=12, 
                        dim.names = c("lat", "lon", "time"),
@@ -296,66 +298,20 @@ extractData = function(files, data, lat, lon, start, end,
   
   for(file in files) {
     if(isTRUE(verbose)) cat("Reading", file,"...\n")
-    data1 = open.ncdf(file)
+    data1 = ncdf4::nc_open(file)
     for(var in names(data1$var)) {
-      if(!identical(data1$var[[var]]$varsize, control.dim)) {
-        if(identical(data1$var[[var]]$varsize, control.dim[1:2])) {
+      idim = data1$var[[var]]$varsize
+      if(!identical(idim[idim!=1], control.dim)) {
+        if(identical(idim[idim!=1], control.dim[1:2])) {
           if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(var, data1),"\n")
-          data[, var] = get.var.ncdf(data1, var)[ix2]  
+          data[, var] = ncdf4::ncvar_get(data1, var)[ix2]  
         } else {
           if(isTRUE(verbose)) cat("Skipping variable", sQuote(var),"(Dimensions do not match.)\n")  
           next  
         }
       } else {
         if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(var, data1),"\n")
-        data[, var] = get.var.ncdf(data1, var)[ix]
-      }
-    }
-    close.ncdf(data1)
-    gc(verbose=FALSE)
-  }
-  if(isTRUE(verbose)) cat("Writing final data base.\n\n")
-  
-  return(data)
-}
-
-extractEnvData = extractData
-
-extractData2 = function(files, data, lat, lon, start, end, 
-                       dx, dy=dx, frequency=12, 
-                       dim.names = c("lat", "lon", "time"),
-                       verbose=TRUE) {
-  
-  if(dim.names[1] %in% names(data))
-    coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy)
-  times  = createTimeAxis(start=start, end=end, frequency=frequency, center=TRUE)
-  
-  latAsFactor  = cut(data[, dim.names[1]], coords$psi$lat, labels=FALSE)
-  lonAsFactor  = cut(data[, dim.names[2]], coords$psi$lon, labels=FALSE)
-  timeAsFactor = cut(data[, dim.names[3]], times$bounds, labels=FALSE)
-  
-  ix  = cbind(lonAsFactor, latAsFactor, timeAsFactor)
-  ix2 = cbind(lonAsFactor, latAsFactor)
-  
-  control.dim = c(length(coords$rho$lon),
-                  length(coords$rho$lat),
-                  length(times$center))                  
-  
-  for(file in files) {
-    if(isTRUE(verbose)) cat("Reading", file,"...\n")
-    data1 = nc_open(file)
-    for(var in names(data1$var)) {
-      if(!identical(data1$var[[var]]$varsize, control.dim)) {
-        if(identical(data1$var[[var]]$varsize, control.dim[1:2])) {
-          if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(var, data1),"\n")
-          data[, var] = ncvar_get(data1, var)[ix2]  
-        } else {
-          if(isTRUE(verbose)) cat("Skipping variable", sQuote(var),"(Dimensions do not match.)\n")  
-          next  
-        }
-      } else {
-        if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(var, data1),"\n")
-        data[, var] = ncvar_get(data1, var)[ix]
+        data[, var] = ncdf4::ncvar_get(data1, var)[ix]
       }
     }
     nc_close(data1)
@@ -366,6 +322,7 @@ extractData2 = function(files, data, lat, lon, start, end,
   return(data)
 }
 
+extractEnvData = extractData
 
 table2ncdf = function(file, species, 
                       lat, lon, dx, dy,
@@ -798,7 +755,20 @@ leq = function(x, thr) {
   return(ind)
 }
 
+.insider2 = function(data, index) {
+  # TO_DO: handle factors
+  alpha = range(data[index], na.rm=TRUE)
+  ind = (data >= alpha[1]) & (data <= alpha[2])
+  return(ind)
+}
 
+insideTesseract =  function(x, index) {
+  ind = rep(TRUE, len=nrow(x))
+  for(i in seq_len(ncol(x))) {
+    ind = ind & .insider2(x[, i], index=index)
+  }
+  return(ind)
+}
 
 
 setPredictionFiles = function(prefix, start, end, aux=NULL, dir=".") {
@@ -813,6 +783,8 @@ setPredictionFiles = function(prefix, start, end, aux=NULL, dir=".") {
   aux.check = if(!is.null(aux)) file.exists(aux) else TRUE
   if(!all(files.check)) warning("Some prediction files don't exist")
   if(!all(aux.check)) warning("Auxiliar prediction files don't exist")
+  
+  class(output) = c("niche.config", class(output))
   
   return(output)
 }
