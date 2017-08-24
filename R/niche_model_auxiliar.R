@@ -1,5 +1,20 @@
 # convert matrix or arrays to presence/absence data
-toPA= function(x, thr=0, prob=FALSE) {
+
+toPA = function(x, thr, ...) {
+  
+  UseMethod("toPA")
+  
+}
+
+toPA.prediction.niche.models = function(x, prob=FALSE, criteria="MinROCdist", ...) {
+  
+  thr = getThreshold(x=x, criteria=criteria)
+  out = toPA.default(x=x$prediction/x$info$factor, thr=thr, prob=prob)
+  return(out)
+  
+}
+  
+toPA.default = function(x, thr=0, prob=FALSE) {
   if(!isTRUE(prob)) {
     if(all(thr==0)) return(.toPA(x))
     thr = sort(unique(c(-Inf, thr, 1)))

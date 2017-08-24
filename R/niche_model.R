@@ -128,7 +128,7 @@ plotThreshold = function(data, coordNames = c("lat", "lon"), obs="observed",
 calculateThresholds = function(data, coordNames = c("lat", "lon"), 
                                obs="observed", 
                                models=NULL, opt.methods=2:12,
-                               req.sens=0.95, req.spec=0.5,
+                               req.sens=0.99, req.spec=0.5,
                                FPC=1, FNC=10, ...) {
   
   data = data[complete.cases(data), ]
@@ -184,24 +184,46 @@ xxx = function(..., sp) {
 }
 
 
-splitDataSet = function(data, var, factor=0.15, seed=771104) {
+splitDataSet = function(data, var, factor=0.15, seed=771104,
+                        useWeights=FALSE, weightsBy=NULL) {
   
-  if(class(data)=="niche.models") {
-    output = list(train=data$train, val=data$val)
+  if(inherits(data, "niche.models")) {
+    warning("Dataset is already split. Doing nothing.")
+    return(data)
   }
+  
   if(is.data.frame(data)) {
-    data = data[!is.na(data[,var]),]
-    dataN = data[data[,var]==0,]
-    dataP = data[data[,var]==1,]
+
+    data = data[!is.na(data[, var]),]
+    
+    w = lapply(data, FUN=.calculatePointWeight)
+    w = as.data.frame(w)
+    if(!is.null(weightsBy)) w = w[, weightsBy, drop=FALSE]
+    w = apply(w, 1, prod)
+    
+    if(!isTRUE(useWeights)) w = rep(1, nrow(data))
+      
+    indN = which(data[,var]==0)
+    indP = which(data[,var]==1)
+    dataN = data[indN, ]
+    dataP = data[indP, ]
     nn = nrow(dataN)
     np = nrow(dataP)
     set.seed(seed)
-    indn = sample(nn, factor*nn)
-    indp = sample(np, factor*np)
+    # sampling designed to mantain prevalence
+    indn = sample(1:nn, factor*nn, prob=w[indN])
+    indp = sample(1:np, factor*np, prob=w[indP])
+    
     training = rbind(dataN[-indn,], dataP[-indp,])
     validation = rbind(dataN[indn,], dataP[indp,])
     output = list(train=training, val=validation)
   }
+  
+  w = lapply(output$train, FUN=.calculatePointWeight)
+  w = as.data.frame(w)
+  
+  output$weights = w
+  
   class(output) = c("niche.models", class(output))
   
   return(output)    
@@ -282,80 +304,6 @@ fakeGAM2 = function(object) {
 
 
 
-fitGAMs = function(object, formulas, FUN=identity, 
-                   name=NULL, link="logit", bigData=FALSE) {
-  
-  name = deparse(substitute(object))
-  
-  FUN = match.fun(FUN)
-  object$transform = FUN
-  
-  gc(verbose=FALSE)
-  
-  DateStamp("Fitting models for", sQuote(name), "dataset.")
-  
-  train = FUN(object$train)
-  val   = FUN(object$val)
-  
-  if(!is.list(object$predicted)) object$predicted = NULL
-  
-  models = names(formulas)
-  
-  aic = object$fit[,"AIC"]
-  bic = object$fit[,"BIC"]
-  var = as.character(formulas[[1]])[2]
-  
-  object$predicted$lon = object$train[,"lon"]
-  object$predicted$lat = object$train[,"lat"]
-  object$predicted$observed = as.numeric(as.character(object$train[,var]))
-  object$predicted = as.data.frame(object$predicted)
-  
-  object$validation$lon = object$val[,"lon"]
-  object$validation$lat = object$val[,"lat"]
-  object$validation$observed = as.numeric(as.character(object$val[,var]))
-  object$validation = as.data.frame(object$validation)
-  
-  for(i in seq_along(formulas)) {
-    model.name = models[i]
-    model.formula = formulas[[i]]
-    DateStamp("Training model ", model.name, ":\n", .fmla2txt(formulas[[i]]), sep="")
-    object$formulas[[model.name]] = model.formula 
-    #model.vars = .getModelVars2(model.formula, train)
-    # TO_DO: filter complete cases
-    if(isTRUE(bigData)) {
-      model = mgcv::bam(model.formula, data = train, family = binomial(link=link))
-    } else {
-      model = mgcv::gam(model.formula, data = train, family = binomial(link=link))
-    }
-    
-    gc(verbose=FALSE)
-    model$anova = anova(model)
-    model$call$family[2] = link
-    object$models[[model.name]] = model
-    # object$preplot[[models[i]]] = with(object$train, preplot(model))
-    
-    aic[model.name] = AIC(model)
-    bic[model.name] = BIC(model)
-    object$predicted[, model.name] = predict(model, newdata=train, type="response")
-    object$validation[, model.name] = predict(model, newdata=val, type="response")
-  }
-  
-  DateStamp("Computing Predictive Performance...")
-  
-  object$fit = cbind(AIC=aic, BIC=bic)
-  
-  object$performance$training   = PredictivePerformance(object$predicted, st.dev=FALSE)
-  object$performance$validation = PredictivePerformance(object$validation, st.dev=FALSE)
-  
-  object$threshold$training  = calculateThresholds(object$predicted)
-  object$threshold$validation = calculateThresholds(object$validation)
-  
-  DateStamp("DONE.")
-  
-  class(object$formulas) = c("niche.models.formulas", class(object$formulas))
-  
-  return(object)
-}
 
 
 
@@ -372,6 +320,11 @@ print.niche.models.formulas = function(x, ...) {
   rownames(out) = names(x)
   print(out)
   
+  return(out)
+}
+
+'[.niche.models.formulas' = function(x, i, ...) {
+  out = '[.simple.list'(x=x, i=i, ...)
   return(out)
 }
 
@@ -403,23 +356,49 @@ print.niche.models = function(x, ...) {
   return(vars)  
 }
 
-predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius=1,
-                                precision=3, interp=!is.null(mask), FUN=identity,
+predict.niche.models = function(object, model=NULL, newdata=NULL, pred.info=NULL, 
+                                cluster=NULL, auxiliar=NULL, newdata.guaranteed=FALSE,
+                                FUN=identity, mask=NULL, radius=1,  precision=3, 
+                                interp=!is.null(mask), 
                                 req.sens=0.90, cost=list(FPC=1, FNC=10), ...) {
+  
+  if(!is.null(newdata)) {
+    if(!inherits(newdata, "data.frame")) 
+      stop("Argument newdata must be a data.frame.")
+    out = .predictNicheModelsNew(object=object, model=model, newdata=newdata, 
+                                 cluster=cluster, auxiliar=auxiliar, 
+                                 newdata.guaranteed=newdata.guaranteed, 
+                                 FUN=FUN, mask=mask, radius=radius, 
+                                 precision=precision, interp=interp, 
+                                 req.sens=req.sens, cost=cost, ...)
+    return(out)
+  }
+  
+  message("The argument pred.info will be deprecated, use 'newdata' instead.")
+  out = .predictNicheModelsOld(object=object, model=model, pred.info=pred.info, 
+                               mask=maks, radius=radius, precision=precision, 
+                               interp=interp, FUN=FUN, req.sens=req.sens, 
+                               cost=cost, ...)
+  return(out)
+    
+}  
+
+.predictNicheModelsOld = function(object, model=NULL, pred.info, mask=NULL, radius=1,
+                                 precision=3, interp=!is.null(mask), FUN=identity,
+                                 req.sens=0.90, cost=list(FPC=1, FNC=10), ...) {
   
   if(!is.null(object$transform)) FUN0 = match.fun(object$transform)
   FUN  = match.fun(FUN)
   
   factor = 10^max(trunc(precision), 3)
-  if( !is.null(model) && !is.na(model) ) {
+  if(!is.null(model) && !is.na(model)) model = .getBestModel(object)
+  
     model.name = model
-    model = getModel(object, model)
-  } else {
-    model.name = .getBestModel(object)
-    model = getBestModel(object)
-  }
+    model = getModel(object, model.name)
+    
   
   DateStamp("Calculating limiting variables")
+  
   # limiting variables
   values = lapply(model$var.summary, xrange, n=10)
   newdata = do.call(expand.grid, values)
@@ -428,12 +407,10 @@ predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius
   model$model$fitted = predict(model, newdata = model$model, type="response")
   thr = try(calculateThresholds(data=model$model, coordNames=names(model$var.summary),
                                 models="fitted", obs=species, req.sens=req.sens, FPC=cost$FPC, FNC=cost$FPC))
-  values = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], quantile, 
-                  probs=c(0.025, 0.975))
+  values = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], quantile, probs=c(0.025, 0.975))
   xvar = which(names(newdata) %in% names(values))
-  limiting = matrix(nrow=length(pred.info$files), ncol=length(xvar)-1)
   
- 
+  limiting = matrix(nrow=length(pred.info$files), ncol=length(xvar)-1)
   # end limiting variables
   
   if(!is.null(pred.info$aux)) aux = read.csv(pred.info$aux)
@@ -451,7 +428,7 @@ predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius
       n = nlon*nlat
       
       if(nrow(newdata)!=n) stop("Predictions cannot be plotted in a grid") 
-      pred = array(dim=c(nlon, nlat, length(pred.info$files)))
+      pred = array(data = NA_integer_, dim=c(nlon, nlat, length(pred.info$files)))
       
       lon = sort(unique(newdata$lon))
       lat = sort(unique(newdata$lat))
@@ -461,11 +438,6 @@ predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius
     }
     
     if(!is.null(pred.info$aux)) {
-      
-      #       newdata$lat = round(newdata$lat, 2)
-      #       newdata$lon = round(newdata$lon, 2)
-      #       aux$lat = round(aux$lat, 2)
-      #       aux$lon = round(aux$lon, 2)
       
       newdata = merge(newdata, aux, by=c("lon", "lat"), all=TRUE, sort=FALSE)
       
@@ -481,7 +453,7 @@ predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius
     if(nrow(newdata)==0) next
     
     temp = predict(model, type="response", newdata=newdata)
-    temp = as.integer(round(factor*temp,3))
+    temp = as.integer(round(factor*temp, 0))
     pred[,,i][ind] = temp 
     
     # begin limiting variables
@@ -492,7 +464,6 @@ predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius
   xvar = which(names(newdata) %in% names(values))
   colnames(limiting) = names(newdata)[xvar]
   rownames(limiting) = round(pred.info$time$center, 2)
-  
   
   if(!identical(dim(pred)[1:2], dim(mask)) & interp) {
     warning("'map' and 'mask' dimensions don't agree. Cannot perform interpolation")
@@ -532,6 +503,265 @@ predict.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius
   
   return(output)
 }
+
+
+.predictNicheModelsNew = function(object, model=NULL, newdata, cluster=NULL,
+                                  auxiliar=NULL, newdata.guaranteed=FALSE, FUN=identity,
+                                  mask=NULL, radius=1, precision=5, 
+                                  interp=!is.null(mask), 
+                                  req.sens=0.90, cost=list(FPC=1, FNC=10), ...) {
+  
+  if(!is.null(object$transform)) FUN0 = match.fun(object$transform)
+  FUN  = match.fun(FUN)
+  
+  factor = 10^max(trunc(precision), 4)
+  if(is.null(model) || is.na(model)) model = .getBestModel(object)
+  
+  model.name = model
+  model = getModel(object, model.name)
+  
+  # DateStamp("Calculating limiting variables")
+  
+  # # limiting variables
+  # values = lapply(model$var.summary, xrange, n=10)
+  # newdata = do.call(expand.grid, values)
+  # newdata$niche = predict(model, newdata = newdata, type="response")
+  # species = as.character(model$formula[2])
+  # model$model$fitted = predict(model, newdata = model$model, type="response")
+  # thr = try(calculateThresholds(data=model$model, coordNames=names(model$var.summary),
+  #                               models="fitted", obs=species, req.sens=req.sens, FPC=cost$FPC, FNC=cost$FPC))
+  # values = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], quantile, probs=c(0.025, 0.975))
+  # xvar = which(names(newdata) %in% names(values))
+  # 
+  # limiting = matrix(nrow=length(pred.info$files), ncol=length(xvar)-1)
+  # # end limiting variables
+  
+  # if(!is.null(pred.info$aux)) aux = read.csv(pred.info$aux)
+  
+  DateStamp("Starting predictions...", sep="")
+  
+  lon = sort(as.numeric(as.character(unique(newdata$lon))))
+  lat = sort(as.numeric(as.character(unique(newdata$lat))))
+  time = sort(as.numeric(as.character(unique(newdata$time))))
+  
+  nlon  = length(lon)
+  nlat  = length(lat)
+  ntime = length(time)
+  
+  n = nlon*nlat*ntime
+  
+  if(!isTRUE(newdata.guaranteed)) {
+    isDup = duplicated(newdata[, c("lon", "lat", "time")])
+    nDup = sum(isDup, na.rm=TRUE)
+    if(nDup>0) newdata = newdata[!isDup, ]
+    if(nrow(newdata)!=n) stop("Predictions cannot be plotted in a grid") 
+    # think in a correction!
+  }
+  
+  coords = list(lon=lon, lat=lat)
+  
+  start = num2date(min(time, na.rm=TRUE))
+  start = c(lubridate::year(start), lubridate::month(start))
+  end   = num2date(max(time, na.rm=TRUE))
+  end   = c(lubridate::year(end), lubridate::month(end))
+  
+  xtime = createTimeAxis(start=start, end=end, frequency = 12, center=TRUE)
+    
+  if(!is.null(auxiliar))
+    newdata = merge(newdata, auxiliar, by=c("lon", "lat"), all=TRUE, sort=FALSE)
+    
+  if(!is.null(object$transform)) newdata = FUN0(newdata)
+  newdata = FUN(newdata)
+  
+  model.vars = .getModelVars(model) 
+  ind = complete.cases(newdata[, model.vars])
+  newdata = newdata[ind, ]
+  
+  if(nrow(newdata)==0) stop("No complete cases to predict!")
+  
+  temp = predict(model, type="response", newdata=newdata, cluster=cluster, ...)
+  temp = as.integer(round(factor*temp, 0))
+
+  pred = array(data=NA_integer_, dim=c(nlon, nlat, ntime))  
+  pred[ind] = temp 
+  
+  # # begin limiting variables
+  # limiting[i, ] = limitingFactor(data=newdata, ranges=values)
+  # xvar = which(names(newdata) %in% names(values))
+  # colnames(limiting) = names(newdata)[xvar]
+  # rownames(limiting) = round(pred.info$time$center, 2)
+  # # end limiting variables
+  limiting = NULL
+  
+  if(!identical(dim(pred)[1:2], dim(mask)) & interp) {
+    warning("'map' and 'mask' dimensions don't agree. Cannot perform interpolation")
+    interp = FALSE
+    mask   = NULL
+  }
+  
+  if(interp) {
+    DateStamp("Performing bilinear spatial interpolation over mask...")
+    pred = fillMap(pred, mask=mask, radius=radius)
+    DateStamp("Performing spline temporal interpolation...")
+    pred = interpolateMap(pred, anomalies=FALSE)
+  }
+  
+  thr = object$threshold$validation[, model.name]
+  fit = object$fit[model.name,]
+  per = rbind(training=object$performance$training[model.name,],
+              validation=object$performance$validation[model.name,])
+  fml = object$formulas[model.name]
+  
+  info = list(coords=coords, time=xtime, factor=factor,
+              threshold=thr, fit=fit, performance=per, formula=fml,
+              model=model.name, transform=FUN, mask=mask)
+  
+  DateStamp("Computing climatologies...")
+  pred.mean   = apply(pred, 1:2, median, na.rm=TRUE)
+  pred.sd     = apply(pred, 1:2, sd, na.rm=TRUE)
+  pred.clim   = climatology(pred, info$time$month)
+  pred.season = climatology(pred, info$time$season)
+  
+  output = list(prediction=pred, info=info, mean=pred.mean, sd=pred.sd,
+                climatology=pred.clim, season=pred.season, limiting=limiting)
+  
+  DateStamp("DONE.")
+  
+  class(output) = "prediction.niche.models"
+  
+  return(output)
+}
+
+
+
+# predict2.niche.models = function(object, model=NULL, pred.info, mask=NULL, radius=1,
+#                                 precision=3, interp=!is.null(mask), FUN=identity,
+#                                 req.sens=0.90, cost=list(FPC=1, FNC=10), ...) {
+#   
+#   if(!is.null(object$transform)) FUN0 = match.fun(object$transform)
+#   FUN  = match.fun(FUN)
+#   
+#   factor = 10^max(trunc(precision), 3)
+#   if( !is.null(model) && !is.na(model) ) {
+#     model.name = model
+#     model = getModel(object, model)
+#   } else {
+#     model.name = .getBestModel(object)
+#     model = getBestModel(object)
+#   }
+#   
+#   DateStamp("Calculating limiting variables")
+#   # limiting variables
+#   values = lapply(model$var.summary, xrange, n=10)
+#   newdata = do.call(expand.grid, values)
+#   newdata$niche = predict(model, newdata = newdata, type="response")
+#   species = as.character(model$formula[2])
+#   model$model$fitted = predict(model, newdata = model$model, type="response")
+#   thr = try(calculateThresholds(data=model$model, coordNames=names(model$var.summary),
+#                                 models="fitted", obs=species, req.sens=req.sens, FPC=cost$FPC, FNC=cost$FPC))
+#   values = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], quantile, 
+#                   probs=c(0.025, 0.975))
+#   xvar = which(names(newdata) %in% names(values))
+#   limiting = matrix(nrow=length(pred.info$files), ncol=length(xvar)-1)
+#  
+#   # end limiting variables
+#   
+#   if(!is.null(pred.info$aux)) aux = read.csv(pred.info$aux)
+#   
+#   for(i in seq_along(pred.info$files)) {
+#     
+#     DateStamp("Prediction on ", pred.info$files[i], "...", sep="")
+#     
+#     newdata = read.csv(pred.info$files[i])
+#     
+#     if(i==1) {
+#       
+#       nlon = length(unique(newdata$lon))
+#       nlat = length(unique(newdata$lat))
+#       n = nlon*nlat
+#       
+#       if(nrow(newdata)!=n) stop("Predictions cannot be plotted in a grid") 
+#       pred = array(dim=c(nlon, nlat, length(pred.info$files)))
+#       
+#       lon = sort(unique(newdata$lon))
+#       lat = sort(unique(newdata$lat))
+#       
+#       coords = list(lon=lon, lat=lat)
+#       
+#     }
+#     
+#     if(!is.null(pred.info$aux)) {
+#       
+#       #       newdata$lat = round(newdata$lat, 2)
+#       #       newdata$lon = round(newdata$lon, 2)
+#       #       aux$lat = round(aux$lat, 2)
+#       #       aux$lon = round(aux$lon, 2)
+#       
+#       newdata = merge(newdata, aux, by=c("lon", "lat"), all=TRUE, sort=FALSE)
+#       
+#     }
+#     
+#     if(!is.null(object$transform)) newdata = FUN0(newdata)
+#     newdata = FUN(newdata)
+#     
+#     model.vars = .getModelVars(model) 
+#     ind = complete.cases(newdata[, model.vars])
+#     newdata = newdata[ind, ]
+#     
+#     if(nrow(newdata)==0) next
+#     
+#     temp = predict(model, type="response", newdata=newdata)
+#     temp = as.integer(round(factor*temp,3))
+#     pred[,,i][ind] = temp 
+#     
+#     # begin limiting variables
+#     limiting[i, ] = limitingFactor(data=newdata, ranges=values)
+#     # end limiting variables
+#   }
+#   
+#   xvar = which(names(newdata) %in% names(values))
+#   colnames(limiting) = names(newdata)[xvar]
+#   rownames(limiting) = round(pred.info$time$center, 2)
+#   
+#   
+#   if(!identical(dim(pred)[1:2], dim(mask)) & interp) {
+#     warning("'map' and 'mask' dimensions don't agree. Cannot perform interpolation")
+#     interp = FALSE
+#     mask   = NULL
+#   }
+#   
+#   if(interp) {
+#     DateStamp("Performing bilinear spatial interpolation over mask...")
+#     pred = fillMap(pred, mask=mask, radius=radius)
+#     DateStamp("Performing spline temporal interpolation...")
+#     pred = interpolateMap(pred, anomalies=FALSE)
+#   }
+#   
+#   thr = object$threshold$validation[,model.name]
+#   fit = object$fit[model.name,]
+#   per = rbind(training=object$performance$training[model.name,],
+#               validation=object$performance$validation[model.name,])
+#   fml = object$formulas[model.name]
+#   
+#   info = list(coords=coords, time=pred.info$time, factor=factor,
+#               threshold=thr, fit=fit, performance=per, formula=fml,
+#               model=model.name, transform=FUN, mask=mask)
+#   
+#   DateStamp("Computing climatologies...")
+#   pred.mean   = apply(pred, 1:2, median, na.rm=TRUE)
+#   pred.sd     = apply(pred, 1:2, sd, na.rm=TRUE)
+#   pred.clim   = climatology(pred, info$time$month)
+#   pred.season = climatology(pred, info$time$season)
+#   
+#   output = list(prediction=pred, info=info, mean=pred.mean, sd=pred.sd,
+#                 climatology=pred.clim, season=pred.season, limiting=limiting)
+#   
+#   DateStamp("DONE.")
+#   
+#   class(output) = "prediction.niche.models"
+#   
+#   return(output)
+# }
 
 
 window.prediction.niche.models = function(x, start=NULL, end=NULL, frequency=NULL, 
@@ -595,11 +825,8 @@ subset.prediction.niche.models = function(x, lat=NULL, lon=NULL) {
 
 getModel = function(object, model.name) {
   
-  dataset = deparse(substitute(object))
   if(!(model.name %in% names(object$models))) stop("Model ", sQuote(model.name), " not found")  
   model = object$models[[model.name]]
-  model$call$data    = eval(parse(text=paste0("get(\"", dataset,"\")$train")))
-  model$call$formula = as.formula(.fmla2txt(model$formula))
   
   return(model)
 }
@@ -622,8 +849,8 @@ getFormula = function(object, model.name) {
 
 getBestModel = function(object, criteria="AUC") {
   
-  model = getModel(object=object, model=.getBestModel(object=object, 
-                                                      criteria=criteria))
+  model = getModel(object=object, 
+                   model=.getBestModel(object=object, criteria=criteria))
   return(model)
 }
 
@@ -882,12 +1109,12 @@ fillSquare = function(x, map, radius=1) {
   return(out)
 }
 
-fillMap = function(object, mask, radius=1, ...) {
+fillMap = function(object, mask, radius=1, fill.value=NA, ...) {
   
   UseMethod("fillMap")
 }
 
-fillMap.matrix = function(object, mask, radius=1, fill.value=0) {
+fillMap.matrix = function(object, mask, radius=1, fill.value=NA) {
   
   allNA  = all(is.na(object))
   noMiss = !any(is.na(object)&!is.na(mask)) 
@@ -911,7 +1138,8 @@ fillMap.matrix = function(object, mask, radius=1, fill.value=0) {
   return(map2)
 }
 
-fillMap.data.frame = function(object, mask=NULL, var, radius=1, dx=1/24, thr=10) {
+fillMap.data.frame = function(object, mask=NULL, var, radius=1, 
+                              fill.value=NA, dx=1/24, thr=10) {
   
   z = object[, var]
   latR = range(pretty(object$lat))
@@ -930,22 +1158,23 @@ fillMap.data.frame = function(object, mask=NULL, var, radius=1, dx=1/24, thr=10)
   return(fill)
 }
 
-fillMap.array = function(object, mask, radius=1) {
+fillMap.array = function(object, mask, radius=1, fill.value) {
   
   dmap = dim(object)
-  out = apply(object, 3, fillMap, mask=mask, radius=radius)
+  out = apply(object, 3, fillMap, mask=mask, radius=radius, fill.value=fill.value)
   dim(out) = dmap
   
   return(out)
 }
 
-fillMap.prediction.niche.models = function(object, mask, radius=1) {
+fillMap.prediction.niche.models = function(object, mask, radius=1, fill.value) {
   
   if(!identical(dim(object$prediction)[1:2], dim(mask))) 
     stop("'object' and 'mask' dimension must agree.")
   
   DateStamp("Performing spatial interpolation over mask...")
-  object$prediction = fillMap(object$prediction, mask=mask, radius=radius)
+  object$prediction = fillMap(object$prediction, mask=mask, radius=radius, 
+                              fill.value=fill.value)
   object$info$mask = mask
   
   DateStamp("Performing temporal interpolation...")

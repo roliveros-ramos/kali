@@ -13,54 +13,189 @@ xrange.default = function(x, n) {
 xrange.factor = function(x, n) return(factor(levels(droplevels(x))))
 quantile.factor = function(x, n) return(factor(levels(droplevels(x))))
 
-calculateNiche = function(model, nmax=1e5, doIt=FALSE, req.sens=0.90, 
-                          cost=list(FPC=1, FNC=10), alpha=0.95, ...) {
-  nvars = length(model$var.summary)
+calculateNiche = function(object, model=NULL, nmax=1e6, doIt=FALSE, 
+                          alpha=0.99, cluster=NULL, FUN=mean, 
+                          verbose=FALSE, ...) {
+    
+  on.exit(invisible(gc()))
+  
+  if(!inherits(object, "niche.models")) 
+    stop("object must be of class 'niche.models'")
+
+  delta  = (1-alpha)/2 # for environmental range calculation
+  
+  modelNames = model
+  if(is.null(modelNames)) modelNames = names(object$model)
+  
+  indM = modelNames %in% names(object$model)
+  modelNames = modelNames[indM]
+  if(length(modelNames)==0) stop("No models match model fitted, check 'model' names.")
+  
+  if(sum(!indM)>0) {
+    discard = paste(modelNames[!indM], collapse=", ")
+    msg = if(sum(!indM)==1) sprintf("One model have been discarded: %s.", discard) else 
+      sprintf("Some (%d) models have been discarded: %s.", sum(!indM), discard)
+    warning(msg)
+  }  
+  
+  models = object$model[modelNames]
+    
+  usedVars = lapply(object$formulas[modelNames], FUN=.getUsedVars, x=names(object$train))
+  usedVars = unique(unlist(usedVars))
+  niche2Dvars  = combn(x = usedVars, 2)
+  
+  nvars = length(usedVars)
+  # nvars = length(model$var.summary)
+  
   if(nvars>=7 & !doIt) 
     stop("Calculating the niche for more than 6 variables
          may take a long time, set doIt=TRUE to proceed.")
-  if(nvars>=7 & !doIt) DateStamp("Starting...")
-  
-  n  = floor(max(min(100, floor((nmax)^(1/nvars))), 10))
+  DateStamp("Starting...")
 
-  # first exploration to set limits
-  values = lapply(model$var.summary, xrange, n=n/3)
-  newdata = do.call(expand.grid, values)
-  newdata$niche = predict(model, newdata = newdata, type="response")
+  cat(sprintf("Calculating niche for %s.\n", paste(usedVars, collapse=", ")))
+  
+  nmax = nvars*nmax
+  n  = floor(max(min(300, floor((nmax)^(1/nvars))), 5))
 
-  fmla = .fmla2txt(model$formula)
-  species = as.character(model$formula[2])
-  model$model$fitted = predict(model, newdata = model$model, type="response")
-  thr = try(calculateThresholds(data=model$model, coordNames=names(model$var.summary),
-                                models="fitted", obs=species, req.sens=req.sens, FPC=cost$FPC, FNC=cost$FPC))
+  values = lapply(object$train[, usedVars], xrange, n=n)
   
-  # final calculation within limits
-  values = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], xrange, n=n)
-  delta  = (1-alpha)/2
-  ranges = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], quantile, 
-                  probs=c(delta, 1-delta))
-  
+  for(iModel in modelNames) values[[iModel]] = NA_real_
+
   newdata = do.call(expand.grid, values)
-  newdata$niche = predict(model, newdata = newdata, type="response")
+  insideNiche = matrix(FALSE, nrow=nrow(newdata), ncol=length(modelNames))
+  colnames(insideNiche) = modelNames
+
+  ranges = list()
+  niches2D = list()
   
-  if(nvars>=7 & !doIt) DateStamp("Ending at")
+  pb = txtProgressBar(style=3)
+  setTxtProgressBar(pb, 0)
   
-  performance = try(PredictivePerformance(data=model$model, coordNames=names(model$var.summary),
-                                          models="fitted", obs=species, st.dev=FALSE))
-  output = list(data=newdata, var=values, model=model$model, species=species, formula=fmla, thr=thr,
-                performance=performance, tolerance=ranges)
+  for(iModel in modelNames) {
+    
+    newdata[[iModel]] = predict(models[[iModel]], newdata = newdata, 
+                                   type="response", cluster=cluster)
+
+    # after model predictions
+    pb = txtProgressBar(style=3)
+    setTxtProgressBar(pb, (2*which(modelNames==iModel)-1)/(2*length(modelNames)+1))
+    
+    iThr = object$thr$validation["ReqSens", iModel]
+    if(isTRUE(verbose)) cat("\nUsing iThr=", iThr, "for model", iModel, ".\n")
+
+    insideNiche[, iModel] = (newdata[[iModel]] > iThr)
+    
+    # check ranges
+    ranges[[iModel]] = lapply(newdata[insideNiche[, iModel], usedVars], 
+                              quantile, probs=c(delta, 1-delta))
+   
+    insideNiche[, iModel] = insideTesseract(x = newdata[, usedVars], 
+                                            index = insideNiche[, iModel])
+     
+    niches2D[[iModel]] = calculateNiche2D(data=newdata, model=iModel, 
+                                          index=insideNiche[, iModel], 
+                                          usedVars=usedVars, FUN=FUN)
+    
+    pb = txtProgressBar(style=3)
+    setTxtProgressBar(pb, (2*which(modelNames==iModel))/(2*length(modelNames)+1))
+    
+  }
+
+  DateStamp("\nEnding at")
+  
+  species = as.character(object$formulas[[1]][2]) #check for species in fitGAMs
+  train = object$train[, c(species, usedVars)]
+   
+  info = list(env=usedVars, model=modelNames, pairs=niche2Dvars)
+  
+  pb = txtProgressBar(style=3)
+  setTxtProgressBar(pb, 1)
+  
+  output = list(data=newdata, model=train, var=values, species=species, 
+                formula=object$formulas, thr=object$thr, tolerance=ranges,
+                niches2D=niches2D, info=info)
+  
   class(output) = c("niche")
   return(output)  
+  
 }
 
-plot.niche = function(x, vars, FUN=median, plot=TRUE, n=200, thr=NULL, 
-                      type="prob", add=FALSE, col="black", lwd=2, bezier=TRUE, ...) {
+# data = newdata # data frame with all the data
+# model # the name of the model
+# index # points inside the tesseract
+# pair # combination of variables
+# usedVars # environmental variables used
+calculateNiche2D = function(data, model, index, usedVars, FUN=FUN) {
+  
+  niche2Dvars  = combn(x = usedVars, 2)
+  out = list()
+  for(i in seq_len(ncol(niche2Dvars))) {
+    out[[i]] = .calculateNiche2D(data=data, model=model, index=index, 
+                                 pair=niche2Dvars[,i], FUN=FUN)
+  }
+  return(out)
+}
+
+.calculateNiche2D = function(data, model, index, pair, FUN=mean) {
+  
+  nicheData = data[[model]]
+  envData = data[pair]
+  xranges = lapply(envData, FUN = function(x) sort(unique(x)))
+  
+  old = list()
+  old$x = xranges[[1]]
+  old$y = xranges[[2]]
+  z1 = tapply(X=nicheData, INDEX=envData, FUN=FUN, na.rm=TRUE)
+  nicheData[!index] = NA
+  z2 = tapply(X=nicheData, INDEX=envData, FUN=FUN, na.rm=TRUE)
+  z2[is.na(z2)] = z1[is.na(z2)] 
+  old$z = z2 
+  old$labs$x = pair[1]
+  old$labs$y = pair[2]
+  
+  return(old)
+}
+
+
+# plot for niche class ----------------------------------------------------
+
+
+plot.niche = function(x, vars, what, plot=TRUE, n=1, thr=NULL, 
+                      criteria="MinROCdist", type="prob", 
+                      col=tim.colors(64), hull=FALSE, 
+                      col.hull="black", lwd=2, ...) {
+  
+  if(!(what %in% x$info$model)) stop("Model names ('what') not found.")
+  if(length(vars)!=2) stop("The argument 'vars' must have length 2.")
+  
+  npair = .getPair(x$info$pairs, vars)
+  reverse = attr(npair, "reverse")
+  
+  xthr = x$thr$validation[, what, drop=FALSE]
+  
+  x = x$niches2D[[what]][[npair]]
+  if(isTRUE(reverse)) {
+    x0 = x$x; y0 = x$y
+    x$x = y0; x$y = x0
+    x$z = t(x$z)
+  }
+ 
+  x$labs = list(x=vars[1], y=vars[2]) 
+  x$thr = xthr
+  
   out = switch(type, 
-               prob = .plotNicheProb(x=x, vars=vars, FUN=FUN, plot=plot, n=n, thr=thr, ...),
-               hull = .plotNicheHull(x=x, vars=vars, FUN=FUN, plot=plot, n=n, thr=thr, 
-                                     add=add, col=col, lwd=lwd, bezier=bezier, ...),
+               prob = .plotNicheProb2(x=x, vars=vars, plot=plot, n=n, thr=thr, 
+                                      criteria=criteria, col=col,
+                                      hull=hull, col.hull=col.hull, lwd=lwd, ...),
+               hull = .plotNicheHull(x=x, vars=vars, plot=plot, n=n, thr=thr, 
+                                     criteria=criteria, col=col.hull, 
+                                     lwd=lwd, ...),
+               pa   = .plotNicheProb2(x=x, vars=vars, plot=plot, n=n, thr=thr, 
+                                      criteria=criteria, col=col,
+                                      hull=hull, col.hull=col.hull, lwd=lwd, toPA=TRUE, ...),
                stop("Invalid plot type."))
   return(invisible(out))
+  
 }
 
 points.niche = function(x, vars, pch=".", col=c("black", "grey"), alpha=0.9, n=1, 
@@ -95,12 +230,56 @@ points.niche = function(x, vars, pch=".", col=c("black", "grey"), alpha=0.9, n=1
   return(invisible())
 }
 
-.plotNicheProb = function(x, vars, FUN=mean, plot=TRUE, n=200, thr=NULL, ...) {
+.plotNicheProb2 = function(x, vars, FUN=mean, plot=TRUE, n=200, thr=NULL, 
+                          criteria="MinROCdist", toPA=FALSE,
+                          col=tim.colors(64), hull=FALSE, col.hull="black", 
+                          lwd=2, ...) {
+  
+  if(is.null(thr)) thr = x$thr[criteria, ]
+  
+  old = x[c("x", "y", "z", "labs")]
+    
+  nold = mean(length(old$x), length(old$y))
+  
+  if(nold<n) {
+    new = list()
+    new$x = xrange(old$x, n=n)
+    new$y = xrange(old$y, n=n)
+    new$z = interp.surface.grid(obj=old, grid.list=new, ...)$z
+    new$labs = old$labs    
+    out = new
+  } else out = old
+ 
+  if(isTRUE(toPA)) out$z = toPA.default(x=out$z, thr=thr)
+ 
+  if(isTRUE(hull)) {
+    xout = out
+    xout$z = toPA.default(x=xout$z, thr=thr)
+    out$hull = .calculateNicheHull(out=xout)
+  } 
+  
+  if(isTRUE(plot)) {
+    image(out, xlab=out$labs$x, ylab=out$labs$y, zlim=c(0,1), col=col)    
+    if(isTRUE(hull)) lines(out$hull, col=col.hull, lwd=lwd, ...)
+  }
+  return(invisible(out))
+}
 
+.plotNicheProb3 = function(x, vars, FUN=mean, plot=TRUE, n=200, thr=NULL, 
+                           criteria="MinROCdist", toPA=FALSE,
+                           col=tim.colors(64), hull=FALSE, col.hull="black", 
+                           lwd=2, ...) {
+  
+  if(is.null(thr)) thr = x$thr[criteria, ]
+  mthr = x$thr["ReqSens",]
+  
   old = list()
   old$x = x$var[[vars[1]]]
   old$y = x$var[[vars[2]]]
-  old$z = tapply(X=x$data$niche, INDEX=x$data[vars], FUN=FUN, ...)
+  # x$data$niche = toPA.default(x=x$data$niche, thr=thr)
+  x$data$niche[x$data$niche<mthr] = NA
+  old$z = tapply(X=x$data$niche, INDEX=x$data[vars], FUN=FUN, na.rm=TRUE)
+  old$z[is.na(old$z)] = mthr
   old$labs$x = vars[1]
   old$labs$y = vars[2]
   
@@ -115,12 +294,35 @@ points.niche = function(x, vars, pch=".", col=c("black", "grey"), alpha=0.9, n=1
     out = new
   } else out = old
   
-  if(!is.null(thr)) out$z = toPA(out$z, thr=thr)
+  # out$z[out$z<=mthr] = 0
+  
+  if(isTRUE(toPA)) out$z = toPA.default(x=out$z, thr=thr)
+  
+  if(isTRUE(hull)) {
+    xout = out
+    xout$z = toPA.default(x=xout$z, thr=thr)
+    out$hull = .calculateNicheHull(out=xout)
+  } 
   
   if(isTRUE(plot)) {
-    image(out, xlab=out$labs$x, ylab=out$labs$y, zlim=c(0,1), col=tim.colors(64))    
+    image(out, xlab=out$labs$x, ylab=out$labs$y, zlim=c(0,1), col=col)    
+    if(isTRUE(hull)) lines(out$hull, col=col.hull, lwd=lwd, ...)
   }
   return(invisible(out))
+}
+
+.calculateNicheHull <- function(out) {
+  
+  coords = list()
+  inside = which(out$z==1)
+  coords$x = matrix(out$x, nrow=nrow(out$z), ncol=ncol(out$z))[inside]
+  coords$y = matrix(out$y, nrow=nrow(out$z), ncol=ncol(out$z), byrow=TRUE)[inside]
+  
+  hull = .getConvexHull(coords)
+  hull = .doSmooth(hull)
+  
+  return(hull)
+  
 }
 
 .getConvexHull = function(x) {
@@ -130,30 +332,29 @@ points.niche = function(x, vars, pch=".", col=c("black", "grey"), alpha=0.9, n=1
   return(out)
 }
 
-.doSmooth = function(x, n) {
-  out = list()
-  xout = seq(0, 1, len=0.25*n)
+.doSmooth = function(x) {
+
   if(length(x$x)<4) return(list(x=NULL, y=NULL))
+  out = list()
+  xout1 = seq(0, 1, len=length(x$x))
+  xout2 = seq(0, 1, len=30*length(x$x))
+  xout = sort(unique(c(xout1, xout2)))
   out$x = approx(x=seq(0, 1, len=length(x$x)), y=x$x, xout=xout)$y
   out$y = approx(x=seq(0, 1, len=length(x$y)), y=x$y, xout=xout)$y
-  out = bezier::bezier(seq(0, 1, len=5*n), out)
+  out = bezier::bezier(seq(0, 1, len=length(out$x)), out)
   return(out)
 }
 
-.plotNicheHull = function(x, vars, FUN=median, plot=TRUE, n=200, 
-                          thr=NULL, add=FALSE, col="black", lwd=2, bezier=TRUE, ...) {
+.plotNicheHull = function(x, vars, FUN=median, plot=TRUE, n=200, criteria="MinROCdist",
+                          thr=NULL, add=FALSE, col="black", lwd=2, ...) {
   
-  if(is.null(thr)) thr=x$thr["ReqSpec",]
+  ithr=x$thr[criteria,]
   
-  out = .plotNicheProb(x=x, vars=vars, FUN=FUN, plot=FALSE, n=n, thr=thr)
-  
-  coords = list()
-  inside = which(out$z==1)
-  coords$x = matrix(out$x, nrow=nrow(out$z), ncol=ncol(out$z))[inside]
-  coords$y = matrix(out$y, nrow=nrow(out$z), ncol=ncol(out$z), byrow=TRUE)[inside]
-  
-  hull = .getConvexHull(coords)
-  if(isTRUE(bezier)) hull = .doSmooth(hull, n=n)
+  out = .plotNicheProb2(x=x, vars=vars, FUN=FUN, plot=FALSE, n=n, thr=thr, 
+                       criteria=criteria, toPA=TRUE)
+ 
+   
+  hull = .calculateNicheHull(out=out)
   
   if(isTRUE(plot)) {
     if(!isTRUE(add)) {
@@ -196,4 +397,125 @@ density.niche = function(x, var, plot=TRUE, vertical=FALSE,
     }
   }
   return(invisible(list(presence=d1, all=d2)))
+}
+
+
+# OLD ---------------------------------------------------------------------
+
+calculateNiche2 = function(model, nmax=1e5, doIt=FALSE, req.sens=0.90, 
+                          cost=list(FPC=1, FNC=10), alpha=0.95, ...) {
+  nvars = length(model$var.summary)
+  if(nvars>=7 & !doIt) 
+    stop("Calculating the niche for more than 6 variables
+         may take a long time, set doIt=TRUE to proceed.")
+  if(nvars>=7 & !doIt) DateStamp("Starting...")
+  
+  n  = floor(max(min(100, floor((nmax)^(1/nvars))), 10))
+  
+  # first exploration to set limits
+  values = lapply(model$var.summary, xrange, n=n/3)
+  newdata = do.call(expand.grid, values)
+  newdata$niche = predict(model, newdata = newdata, type="response")
+  
+  fmla = .fmla2txt(model$formula)
+  species = as.character(model$formula[2])
+  model$model$fitted = predict(model, newdata = model$model, type="response")
+  thr = try(calculateThresholds(data=model$model, coordNames=names(model$var.summary),
+                                models="fitted", obs=species, req.sens=req.sens, FPC=cost$FPC, FNC=cost$FPC))
+  
+  # final calculation within limits
+  values = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], xrange, n=n)
+  delta  = (1-alpha)/2
+  ranges = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], quantile, 
+                  probs=c(delta, 1-delta))
+  
+  newdata = do.call(expand.grid, values)
+  newdata$niche = predict(model, newdata = newdata, type="response")
+  
+  if(nvars>=7 & !doIt) DateStamp("Ending at")
+  
+  performance = try(PredictivePerformance(data=model$model, coordNames=names(model$var.summary),
+                                          models="fitted", obs=species, st.dev=FALSE))
+  output = list(data=newdata, var=values, model=model$model, species=species, formula=fmla, thr=thr,
+                performance=performance, tolerance=ranges)
+  class(output) = c("niche")
+  return(output)  
+}
+
+
+calculateNiche3 = function(object, model=NULL, nmax=1e5, doIt=FALSE, req.sens=0.90, 
+                          cost=list(FPC=1, FNC=10), alpha=0.95, ...) {
+  
+  if(!inherits(object, "niche.models")) 
+    stop("object must be of class 'niche.models'")
+  
+  if(is.null(model)) model =  .getBestModel(object)
+  
+  model = object$model[[model]]
+  
+  nvars = length(model$var.summary)
+  if(nvars>=7 & !doIt) 
+    stop("Calculating the niche for more than 6 variables
+         may take a long time, set doIt=TRUE to proceed.")
+  if(nvars>=7 & !doIt) DateStamp("Starting...")
+  
+  n  = floor(max(min(100, floor((nmax)^(1/nvars))), 10))
+  
+  # first exploration to set limits
+  values = lapply(model$var.summary, xrange, n=n/3)
+  newdata = do.call(expand.grid, values)
+  newdata$niche = predict(model, newdata = newdata, type="response")
+  
+  fmla = .fmla2txt(model$formula)
+  species = as.character(model$formula[2])
+  model$model$fitted = model$fitted.values
+  thr = try(calculateThresholds(data=model$model, coordNames=names(model$var.summary),
+                                models="fitted", obs=species, req.sens=req.sens, FPC=cost$FPC, FNC=cost$FPC))
+  
+  # final calculation within limits
+  values = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], xrange, n=n)
+  
+  # check range calculation
+  delta  = (1-alpha)/2
+  ranges = lapply(newdata[newdata$niche>thr["ReqSpec", 1], ], quantile, 
+                  probs=c(delta, 1-delta))
+  
+  newdata = do.call(expand.grid, values)
+  newdata$niche = predict(model, newdata = newdata, type="response")
+  
+  if(nvars>=7 & !doIt) DateStamp("Ending at")
+  
+  performance = try(PredictivePerformance(data=model$model, coordNames=names(model$var.summary),
+                                          models="fitted", obs=species, st.dev=FALSE))
+  
+  missVar = names(model$var.summary)[!(names(model$var.summary) 
+                                       %in% names(model$model))]
+  
+  mVars = if(!is.null(model$na.action)) {
+    object$train[-model$na.action, missVar]
+  } else object$train[, missVar]
+  
+  model$model = cbind(model$model, mVars)
+  
+  output = list(data=newdata, var=values, model=model$model, species=species, formula=fmla, thr=thr,
+                performance=performance, tolerance=ranges)
+  
+  class(output) = c("niche")
+  return(output)  
+}
+
+
+
+# Auxiliar ----------------------------------------------------------------
+
+.getPair = function(x, pair) {
+  reverse = FALSE
+  out = which(apply(x, 2, identical, y=pair))
+  if(length(out)==0) {
+    reverse = TRUE
+    out = which(apply(x, 2, identical, y=rev(pair)))
+  }
+  if(length(out)==0) stop("The pair doesn't match with any combination.")
+  attr(x=out, which="reverse") = reverse
+  return(out)
 }
