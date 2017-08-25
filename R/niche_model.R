@@ -614,7 +614,7 @@ predict.niche.models = function(object, model=NULL, newdata=NULL, pred.info=NULL
   
   info = list(coords=coords, time=xtime, factor=factor,
               threshold=thr, fit=fit, performance=per, formula=fml,
-              model=model.name, transform=FUN, mask=mask)
+              model=model.name, transform=FUN, mask=if(is.null(mask)) 1 else mask)
   
   DateStamp("Computing climatologies...")
   pred.mean   = apply(pred, 1:2, median, na.rm=TRUE)
