@@ -14,17 +14,34 @@ toPA.prediction.niche.models = function(x, prob=FALSE, criteria="MinROCdist", ..
   
 }
   
+# toPA.default = function(x, thr=0, prob=FALSE) {
+#   if(!isTRUE(prob)) {
+#     if(all(thr==0)) return(.toPA(x))
+#     thr = sort(unique(c(-Inf, thr, 1)))
+#     probs = seq(from=0, to=1, len=length(thr)-1)
+#     xcut = cut(x, breaks=thr, labels=probs)
+#     x[] = as.numeric(as.character(xcut))
+#     return(x)
+#   } else {
+#     return(toPA.default(x, thr=thr, prob=FALSE)*x)
+#   }
+# }
+
 toPA.default = function(x, thr=0, prob=FALSE) {
   if(!isTRUE(prob)) {
-    if(all(thr==0)) return(.toPA(x))
-    thr = sort(unique(c(-Inf, thr, 1)))
-    probs = seq(from=0, to=1, len=length(thr)-1)
-    xcut = cut(x, breaks=thr, labels=probs)
-    x[] = as.numeric(as.character(xcut))
+    if(thr==0) return(.toPA(x))
+    ind0 = which(x<thr)
+    ind1 = which(x>=thr)
+    x[ind0] = 0 
+    x[ind1] = 1 
     return(x)
   } else {
-    return(.toPA(x)*x)
+    return(toPA.default(x, thr=thr, prob=FALSE)*x)
   }
+}
+
+.toPA = function(x) {  
+  return(0 + !!x)
 }
 
 # to be deprecated
