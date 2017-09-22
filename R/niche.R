@@ -5,7 +5,10 @@ xrange = function(x, n) {
 }
 
 xrange.default = function(x, n) {
+  isPositive = (min(x, na.rm=TRUE) > 0)
   xr = range(pretty(x, n=100), na.rm=TRUE)
+  if(isPositive & xr[1]<.Machine$double.eps) 
+    xr[1] = 0.5*min(x, na.rm=TRUE)
   out  = seq(from=xr[1], to=xr[2], length.out=n)
   return(out)
 } 
@@ -56,6 +59,8 @@ calculateNiche = function(object, model=NULL, nmax=1e6, doIt=FALSE,
   
   nmax = nvars*nmax
   n  = floor(max(min(300, floor((nmax)^(1/nvars))), 5))
+  
+  if(isTRUE(verbose)) cat("\nUsing n =", n, "\n")
 
   values = lapply(object$train[, usedVars], xrange, n=n)
   
@@ -72,6 +77,8 @@ calculateNiche = function(object, model=NULL, nmax=1e6, doIt=FALSE,
   setTxtProgressBar(pb, 0)
   
   for(iModel in modelNames) {
+    
+    if(isTRUE(verbose)) cat("\nCalculating niche for model", iModel, "\n")
     
     newdata[[iModel]] = predict(models[[iModel]], newdata = newdata, 
                                    type="response", cluster=cluster)
