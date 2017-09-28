@@ -7,7 +7,7 @@ Author: Ricardo Oliveros-Ramos
 Maintainer: Ricardo Oliveros-Ramos <ricardo.oliveros@gmail.com>
 Description: Tools for habitat and niche modeling prediction and analysis.
 License: GLP-2
-Depends: fields, maps, akima, PresenceAbsence, bezier, lubridate
+Depends: fields, maps, akima, PresenceAbsence, bezier, lubridate, tibble
 Suggests: mapdata, animation, ncdf4
 ByteCompile: TRUE
 LazyData: TRUE

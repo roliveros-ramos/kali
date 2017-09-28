@@ -52,7 +52,7 @@ getDistributionRecords = function(sp, limit=NULL, source="gbif", verbose=FALSE, 
   nc = nchar(out$basisOfRecord)
   out$basisOfRecord[nc<2] = "Unknown"
   out = as_tibble(out)
-  out = remove_rownames(out)
+  out = tibble::remove_rownames(out)
   out$basisOfRecord = as.factor(out$basisOfRecord)
   
   spName = names(which.max(table(dat$scientificName)))
@@ -90,7 +90,7 @@ getDistributionRecords = function(sp, limit=NULL, source="gbif", verbose=FALSE, 
   out = out[complete.cases(out), ]
   out$basisOfRecord = toCamel(out$basisOfRecord, split="_")
   out$basisOfRecord[out$basisOfRecord=="Observation"] = "Occurrence"
-  out = remove_rownames(out)
+  out = tibble::remove_rownames(out)
   out$basisOfRecord = as.factor(out$basisOfRecord)
   
   tmp = unlist(strsplit(names(which.max(table(dat$scientificName))), split=" "))
