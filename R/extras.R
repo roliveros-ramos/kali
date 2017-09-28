@@ -72,3 +72,38 @@ load_object = function(file, object="env") {
   return(get(object, pos=2, inherits=FALSE))
 }
 
+toCamel = function(x, split=" ", lower=FALSE) {
+  .capitalize = function(x) {
+    substr(x, 1, 1) = toupper(substr(x, 1, 1))
+    return(x)
+  }
+  x = strsplit(x, split=split)
+  x = lapply(x, tolower)
+  x = lapply(x, .capitalize)
+  x = sapply(x, paste, collapse="")
+  if(isTRUE(lower)) substr(x, 1, 1) = tolower(substr(x, 1, 1))
+  return(x)
+}
+
+checkScientificName = function(sp) {
+  
+  if(!requireNamespace("taxize", quietly = TRUE)) 
+    stop("You need to install the 'taxize' package.")
+  
+  .checkScientificName = function(sp) {
+    tmp = taxize::gnr_resolve(names = sp, canonical = TRUE)$matched_name2
+    tmp = names(which.max(table(tmp)))
+    if(is.null(tmp)) {
+      message(sprintf("Name '%s' not found, returning original name.", sp))
+      tmp = sp
+    }
+    id = identical(sp, tmp)
+    if(!id) message(sprintf("Species '%s' was corrected to '%s'.", sp, tmp))
+    return(tmp)
+  }
+  out = unlist(sapply(sp, .checkScientificName))
+  if(is.null(out)) {
+    
+  }
+  return(out)
+}
