@@ -11,16 +11,14 @@ createGridAxes = function(lat,lon, dx, dy=dx, center=FALSE) {
     lon[which.max(lon)] = lon[which.max(lon)] - 0.5*dx
   }
   
-  lats.rho = seq(from=min(lat),to=max(lat),by=dy)
-  lons.rho = seq(from=min(lon),to=max(lon),by=dx)
+  nx = 1 + round(diff(lon)/dx, 0)
+  ny = 1 + round(diff(lat)/dy, 0)
+
+  lats.rho = seq(from=min(lat),to=max(lat), length=ny)
+  lons.rho = seq(from=min(lon),to=max(lon), length=nx)
   
-  lat[which.min(lat)] = lat[which.min(lat)] - 0.5*dy
-  lat[which.max(lat)] = lat[which.max(lat)] + 0.5*dy
-  lon[which.min(lon)] = lon[which.min(lon)] - 0.5*dx
-  lon[which.max(lon)] = lon[which.max(lon)] + 0.5*dx
-  
-  lats.psi = seq(from=min(lat),to=max(lat),by=dy)
-  lons.psi = seq(from=min(lon),to=max(lon),by=dx)
+  lats.psi = seq(from=min(lat) - 0.5*dy, to=max(lat) + 0.5*dy, length=ny+1)
+  lons.psi = seq(from=min(lon) - 0.5*dx, to=max(lon) + 0.5*dx, length=nx+1)
   
   rho = list(lat=lats.rho, lon=lons.rho)
   psi = list(lat=lats.psi, lon=lons.psi)
