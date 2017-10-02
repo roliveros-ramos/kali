@@ -279,10 +279,11 @@ ncdf2data = function(files, slices, control, var, control.dim=NULL) {
 extractData = function(files, data, lat, lon, start, end, 
                        dx, dy=dx, frequency=12, 
                        dim.names = c("lat", "lon", "time"),
-                       verbose=TRUE) {
+                       verbose=TRUE, center=FALSE) {
   
-  if(dim.names[1] %in% names(data))
-    coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy)
+  if(all(dim.names[1:2] %in% names(data)))
+    coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy, center=center)
+  
   times  = createTimeAxis(start=start, end=end, frequency=frequency, center=TRUE)
   
   latAsFactor  = cut(data[, dim.names[1]], coords$psi$lat, labels=FALSE)
@@ -292,10 +293,17 @@ extractData = function(files, data, lat, lon, start, end,
   ix  = cbind(lonAsFactor, latAsFactor, timeAsFactor)
   ix2 = cbind(lonAsFactor, latAsFactor)
   
+  cix = which(complete.cases(ix))
+  cix2 = which(complete.cases(ix2))
+  
+  ix  = ix[cix, ]
+  ix2 = ix2[cix2, ]
+  
   control.dim = c(length(coords$rho$lon),
                   length(coords$rho$lat),
                   length(times$center))                  
   
+  invisible(gc(verbose = FALSE))
   for(file in files) {
     if(isTRUE(verbose)) cat("Reading", file,"...\n")
     data1 = ncdf4::nc_open(file)
@@ -304,15 +312,16 @@ extractData = function(files, data, lat, lon, start, end,
       if(!identical(idim[idim!=1], control.dim)) {
         if(identical(idim[idim!=1], control.dim[1:2])) {
           if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(var, data1),"\n")
-          data[, var] = ncdf4::ncvar_get(data1, var)[ix2]  
+          data[cix2, var] = ncdf4::ncvar_get(data1, var)[ix2]  
         } else {
           if(isTRUE(verbose)) cat("Skipping variable", sQuote(var),"(Dimensions do not match.)\n")  
           next  
         }
       } else {
         if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(var, data1),"\n")
-        data[, var] = ncdf4::ncvar_get(data1, var)[ix]
+        data[cix, var] = ncdf4::ncvar_get(data1, var)[ix]
       }
+      invisible(gc(verbose = FALSE))
     }
     nc_close(data1)
     gc(verbose=FALSE)
