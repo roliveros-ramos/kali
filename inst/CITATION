@@ -4,7 +4,7 @@ bibentry(bibtype = "Article",
          title = "kali: Tools for habitat and niche modeling.",
          journal = "Submitted",
          author = c(person("Ricardo", "Oliveros--Ramos"),
-                    person("Criscely", "Luján")),
+                    person("Criscely", "Lujan")),
          year = 2016,
          note = note,
          url = "htpps://roliveros-ramos.github.com/kali")

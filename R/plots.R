@@ -23,14 +23,11 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
                       bigplot = NULL, smallplot = NULL, legend.only = FALSE, 
                       col = rev(rainbow(nlevel/10, start = 0/6, end = 4/6)), 
                       lab.breaks = NULL, axis.args = NULL, legend.args = NULL, axes=TRUE,
-                      midpoint = FALSE, border = NA, lwd = 1, land.col="black",
+                      midpoint = FALSE, border = TRUE, lwd = 1, land.col="black",
                       sea.col="white", boundaries.col="grey", grid=FALSE, grid.col="white", ...) {
   
-  lonData = .checkLongitude(lon)
-  if(!is.null(lonData$ind)) {
-    z = z[lonData$ind, ]
-    lon = lonData$lon
-  }
+  # lonData = .checkLongitude(lon)
+  # if(!is.null(lonData$ind)) center = 180
   
   if(!isTRUE(legend)) {
     .image.mapnl(lon=lon, lat=lat, z=z, center=center, hires=hires, add=add, nlevel=nlevel, 

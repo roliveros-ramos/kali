@@ -128,6 +128,7 @@ fitGAMs = function(object, formulas, FUN=identity, refit=FALSE,
   tab2 = rep(0, n)
   tab2[as.numeric(names(tab))] = tab
   z = tab2[y]
+  z = 1/z
   z = z/mean(z)
   return(z)
 }

@@ -4,11 +4,11 @@
                         land.col="darkolivegreen4", sea.col="aliceblue", boundaries.col = "black", 
                         grid.col="white", grid=FALSE, axes=TRUE, border=!axes, ...) {
   
-  lonData = .checkLongitude(lon)
-  if(!is.null(lonData$ind)) {
-    z = z[lonData$ind, ]
-    lon = lonData$lon
-  }
+  # lonData = .checkLongitude(lon)
+  # if(!is.null(lonData$ind)) {
+  #   z = z[lonData$ind, ]
+  #   lon = lonData$lon
+  # }
   
   image(x=lon, y=lat, z=z, col=col, axes=FALSE, add=add, xlab="", ylab="", ...)
   

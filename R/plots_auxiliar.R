@@ -87,10 +87,10 @@ rotateMap =  function(x) {
 
 
 # change the center of a map database
-map2 =  function(database, center, ...){
+map2 =  function(database, center, ...) {
   # change the center of the map (e.g. to show complete Pacific Ocean)
   # From stackoverflow (check reference and how to cite)
-  Obj = map(database, ..., plot=FALSE)
+  Obj = maps::map(database, ..., plot=FALSE)
   coord = cbind(Obj[[1]],Obj[[2]])
   # split up the coordinates
   id = rle(!is.na(coord[,1]))
@@ -100,19 +100,20 @@ map2 =  function(database, center, ...){
   polygons = lapply(polygons, function(x) {
     x[,1] = x[,1] + center
     x[,1] = ifelse(x[,1]>180,x[,1]-360,x[,1])
-    if(sum(diff(x[,1])>300,na.rm=T) >0){
+    if(sum(diff(x[,1])>300,na.rm=TRUE) >0){
       id = x[,1] < 0
       x = rbind(x[id,],c(NA,NA),x[!id,])
     }
+    
     return(x)
   })
   
   # reconstruct the object
   polygons = do.call(rbind,polygons)
-  Obj[[1]] = polygons[,1]
-  Obj[[2]] = polygons[,2]
+  Obj[[1]] = c(polygons[,1], c(NA, NA), polygons[,1] + 360) 
+  Obj[[2]] = c(polygons[,2], c(NA, NA), polygons[,2])
   
-  map(Obj,...)
+  maps::map(Obj,...)
 }
  
 # create method fill??

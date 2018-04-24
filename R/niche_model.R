@@ -19,7 +19,7 @@ AUC = function(data, coordNames = c("lat", "lon"), obs="observed",
   return(output)
 }
 
-kappa = function(data, coordNames = c("lat", "lon"), obs="observed",
+.kappa = function(data, coordNames = c("lat", "lon"), obs="observed",
                  models=NULL, st.dev=TRUE, na.rm=TRUE) {
   
   modelNames = models
@@ -42,6 +42,42 @@ kappa = function(data, coordNames = c("lat", "lon"), obs="observed",
   return(output)
 }
 
+
+PBC = function(data, coordNames = c("lat", "lon"), obs="observed",
+                  models=NULL, st.dev=TRUE, na.rm=TRUE) {
+  
+  modelNames = models
+  if(is.null(models)) {
+    models = which(!(names(data) %in% c(coordNames, obs)))
+    modelNames = names(data)[models]
+  }
+  observed = data[,obs]
+  if(is.factor(observed)) observed = as.numeric(as.character(observed))  
+  DATA = data[,models]
+  
+  output = numeric(length(models))
+  
+  for(i in seq_along(models)) {
+    output[i] = .PBC(x=DATA[,i], y=observed)
+  }
+  names(output) = modelNames
+  
+  return(output)
+}
+
+.PBC = function(x, y) {
+  m0 = which(y==0)
+  m1 = which(y==1)
+  n0 = length(m0)
+  n1 = length(m1)
+  n  = n0 + n1
+  M0 = mean(x[m0])
+  M1 = mean(x[m1])
+  sn = sd(x)
+  r  = (M1-M0)*sqrt((n0/n)*(n1/(n-1)))/sn 
+  return(r)
+}
+
 TSS = function(data, coordNames = c("lat", "lon"), obs="observed",
                models=NULL, st.dev=TRUE, na.rm=TRUE) {
   
@@ -52,7 +88,7 @@ TSS = function(data, coordNames = c("lat", "lon"), obs="observed",
   }
   observed = data[,obs]
   if(is.factor(observed)) observed = as.numeric(as.character(observed))  
-  DATA = data.frame(1, observed, data[,models])
+  DATA = data.frame(1, observed, data[, models])
   
   thr = as.numeric(optimal.thresholds(DATA=DATA, opt.methods="MaxSens+Spec")[-1])
   output = NULL
@@ -80,13 +116,15 @@ PredictivePerformance = function(data, coordNames = c("lat", "lon"), obs="observ
   data = data[complete.cases(data), ]
   out1 = AUC(data=data, coordNames = coordNames, obs=obs, 
              models=models, st.dev=TRUE, na.rm=na.rm)
-  out2 = kappa(data=data, coordNames = coordNames, obs=obs, 
+  out2 = .kappa(data=data, coordNames = coordNames, obs=obs, 
                models=models, st.dev=TRUE, na.rm=na.rm)
   out3 = TSS(data=data, coordNames = coordNames, obs=obs, 
              models=models, st.dev=TRUE, na.rm=na.rm)
+  out4 = PBC(data=data, coordNames = coordNames, obs=obs, 
+             models=models, st.dev=TRUE, na.rm=na.rm)
   
-  output1 = cbind(AUC=out1[,1], Kappa=out2[,1], out3[,c(1,3,5)])
-  output2 = cbind(AUC.sd=out1[,2], Kappa.sd=out2[,2], out3[,c(2,4,6)])
+  output1 = cbind(AUC=out1[,1], PBC=out4, Kappa=out2[,1], out3[,c(3,5,1)])
+  output2 = cbind(AUC.sd=out1[,2], PBC=NA, Kappa.sd=out2[,2], out3[,c(4,6,2)])
   
   output = if(st.dev) {
     list(statistic=output1, sd=output2)

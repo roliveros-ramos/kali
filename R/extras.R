@@ -65,8 +65,9 @@ num2date = function(x) {
 
 
 load_object = function(file, object="env") {
-  on.exit(detach())
-  attach(file)
+  name = paste("tmp", basename(tempfile()), sep="_")
+  attach(what=file, name=name)
+  on.exit(detach(name, character.only = TRUE))
   if(!exists(object, where=2, inherits=FALSE)) 
     stop("object not found.")
   return(get(object, pos=2, inherits=FALSE))
@@ -106,4 +107,34 @@ checkScientificName = function(sp) {
     
   }
   return(out)
+}
+
+
+#' Weighted random sampling with a reservoir
+#'
+#' Implementation of the Weighted random sampling with a reservoir (without replacement)
+#' (Efraimidis & Spirakis, 2006) algorithm.
+#' @param x a vector of one or more elements from which to choose.
+#' @param size a non-negative integer giving the number of items to choose.
+#' @param prob a vector of weights for obtaining the elements of the vector being sampled.
+#'
+#' @references Efraimidis & Spirakis (2006). Weighted random sampling with a reservoir
+#' @return A vector of length \code{size} with elements drawn from \code{x}
+#' @export
+#'
+#' @examples
+#' N = 1000
+#' x = seq_len(N)
+#' prob = c(rep(0.1, N/2), rep(1, N/2))
+#' x_sample = sample.weighted(x=x, prob=prob, size=N/2)
+#' hist(x_sample)
+sample.weighted = function(x, size, prob) {
+  if(length(x) == 1L && is.numeric(x) && is.finite(x) && x >= 
+      1) x = seq_len(x)
+  if (missing(size)) size = length(x)
+  if(length(prob)!=length(x)) stop("'prob' must match the length of 'x'.")
+  if(size>length(x)) stop("cannot take a sample larger than the population.")
+  nr = runif(length(x))
+  ind = order(log(nr)/prob, decreasing=TRUE)[seq_len(size)]
+  return(x[ind])
 }

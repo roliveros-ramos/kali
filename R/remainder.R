@@ -35,7 +35,7 @@ map2data = function(z, x, y) {
   return(out)
 }
 
- 
+
 # convert a data.frame to matrix (grid)
 table2grid = function(data, var, lat, lon, dx=dy, dy=dx, FUN=sum, ...) {
   
@@ -276,59 +276,85 @@ ncdf2data = function(files, slices, control, var, control.dim=NULL) {
 }
 
 
-extractData = function(files, data, lat, lon, start, end, 
-                       dx, dy=dx, frequency=12, 
-                       dim.names = c("lat", "lon", "time"),
-                       verbose=TRUE, center=FALSE) {
+extractData = function(files, data, start, end, frequency=12, 
+                       dim.names = c("lon", "lat", "time"),
+                       verbose=TRUE) {
   
-  if(all(dim.names[1:2] %in% names(data)))
-    coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy, center=center)
-  
-  times  = createTimeAxis(start=start, end=end, frequency=frequency, center=TRUE)
-  
-  latAsFactor  = cut(data[, dim.names[1]], coords$psi$lat, labels=FALSE)
-  lonAsFactor  = cut(data[, dim.names[2]], coords$psi$lon, labels=FALSE)
-  timeAsFactor = cut(data[, dim.names[3]], times$bounds, labels=FALSE)
-  
-  ix  = cbind(lonAsFactor, latAsFactor, timeAsFactor)
-  ix2 = cbind(lonAsFactor, latAsFactor)
-  
-  cix = which(complete.cases(ix))
-  cix2 = which(complete.cases(ix2))
-  
-  ix  = ix[cix, ]
-  ix2 = ix2[cix2, ]
-  
-  control.dim = c(length(coords$rho$lon),
-                  length(coords$rho$lat),
-                  length(times$center))                  
-  
-  invisible(gc(verbose = FALSE))
   for(file in files) {
+    
     if(isTRUE(verbose)) cat("Reading", file,"...\n")
     data1 = ncdf4::nc_open(file)
-    for(var in names(data1$var)) {
-      idim = data1$var[[var]]$varsize
-      if(!identical(idim[idim!=1], control.dim)) {
-        if(identical(idim[idim!=1], control.dim[1:2])) {
-          if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(var, data1),"\n")
-          data[cix2, var] = ncdf4::ncvar_get(data1, var)[ix2]  
+    
+    for(iVar in names(data1$var)) {
+      
+      dimSize = data1$var[[iVar]]$varsize
+      dimSize = dimSize[dimSize!=1]
+      
+      # ----
+      times  = createTimeAxis(start=start, end=end, frequency=frequency, center=TRUE)
+      dTime = data[, dim.names[3], drop=FALSE][[1]]
+      timeAsFactor = cut(dTime, times$bounds, labels=FALSE)
+      
+      iLon = data1$var[[iVar]]$dim[[1]]$vals
+      iLat = data1$var[[iVar]]$dim[[2]]$vals
+      
+      dx = mean(diff(iLon))
+      dy = mean(diff(iLat))
+      
+      pLon = c(iLon - 0.5*dx, tail(iLon, 1) + 0.5*dx)
+      pLat = c(iLat - 0.5*dy, tail(iLat, 1) + 0.5*dy)
+      
+      dLon = checkLongitude(data[, dim.names[1], drop=FALSE][[1]], 
+                            primeMeridian = .findPrimeMeridian(iLon))
+      dLat = data[, dim.names[2], drop=FALSE][[1]]
+      
+      latAsFactor  = cut(dLat, pLat, labels=FALSE)
+      lonAsFactor  = cut(dLon, pLon, labels=FALSE)
+      
+      ix  = cbind(lonAsFactor, latAsFactor, timeAsFactor)
+      ix2 = cbind(lonAsFactor, latAsFactor)
+      cix = which(complete.cases(ix))
+      cix2 = which(complete.cases(ix2))
+      ix  = ix[cix, ]
+      ix2 = ix2[cix2, ]
+      
+      controlDim = c(length(iLon), length(iLat), length(times$center))    
+      # ----
+      
+      if(!identical(dimSize, controlDim)) {
+        
+        if(identical(dimSize, controlDim[1:2])) {
+          
+          if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(iVar, data1),"\n")
+          data[cix2, iVar] = ncdf4::ncvar_get(data1, iVar)[ix2]  
+          
         } else {
-          if(isTRUE(verbose)) cat("Skipping variable", sQuote(var),"(Dimensions do not match.)\n")  
+          
+          if(isTRUE(verbose)) cat("Skipping variable", sQuote(iVar),"(Dimensions do not match.)\n")  
           next  
+          
         }
+        
       } else {
-        if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(var, data1),"\n")
-        data[cix, var] = ncdf4::ncvar_get(data1, var)[ix]
+        
+        if(isTRUE(verbose)) cat("\tAdding variable", .makeNameNcdfVar(iVar, data1),"\n")
+        data[cix, iVar] = ncdf4::ncvar_get(data1, iVar)[ix]
+        
       }
+      
       invisible(gc(verbose = FALSE))
+      
     }
-    nc_close(data1)
+    
+    ncdf4::nc_close(data1)
     gc(verbose=FALSE)
+    
   }
+  
   if(isTRUE(verbose)) cat("Writing final data base.\n\n")
   
   return(data)
+  
 }
 
 extractEnvData = extractData
@@ -824,7 +850,7 @@ saveAnimation.default = function(object, file, dir=getwd(),
         cat(i,"")
         image.plot(object[,,i], ...)
       }
-      },
+    },
     movie.name="temp.gif",
     img.name="slice", clean=TRUE, verbose=FALSE, 
     interval=interval, loop=1, check=TRUE, autobrowse=FALSE)),
@@ -834,7 +860,7 @@ saveAnimation.default = function(object, file, dir=getwd(),
   DateStamp("DONE.")
   
   return(invisible(x))
-
+  
 }
 
 addLHT = function(object, sp, lifespan=1, 
@@ -867,7 +893,7 @@ normalize = function(x) {
   ind = ilat & ilon
   
   return(ind)
-
+  
 }
 
 .ponderate = function(w, x) {
@@ -1239,8 +1265,8 @@ createPredictionFiles = function(files, aux.files=NULL, lat, lon, start, end,
     xy$time =  dates$time[t]
     xy$month = dates$month[t]
     out = extractData2(files=files, data=xy, 
-                      lat=lat, lon=lon, start=start, end=end, dx=dx, dy=dy,
-                      verbose=verbose)
+                       lat=lat, lon=lon, start=start, end=end, dx=dx, dy=dy,
+                       verbose=verbose)
     
     if(!is.null(FUN)) out = FUN(out, ...)
     
@@ -1275,8 +1301,8 @@ createAuxPredictionFiles = function(files, lat, lon, start, end,
   out$time =  start[1] + 14/365
   
   out = extractData2(files=files, data=out, 
-                    lat=lat, lon=lon, start=start, end=end, dx=dx, dy=dy,
-                    verbose=verbose)
+                     lat=lat, lon=lon, start=start, end=end, dx=dx, dy=dy,
+                     verbose=verbose)
   
   if(!is.null(FUN)) {
     DateStamp("Post-processing auxiliar file.")
