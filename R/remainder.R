@@ -37,7 +37,8 @@ map2data = function(z, x, y) {
 
 
 # convert a data.frame to matrix (grid)
-table2grid = function(data, var, lat, lon, dx=dy, dy=dx, FUN=sum, ...) {
+table2grid = function(data, var, lat, lon, dx=dy, dy=dx, FUN=sum, 
+                      varNames = c("lat", "lon"), ...) {
   
   FUN = match.fun(FUN)
   
@@ -64,8 +65,8 @@ table2grid = function(data, var, lat, lon, dx=dy, dy=dx, FUN=sum, ...) {
     rnames = lonCut[-1] - diff(lonCut)
   }
   
-  latAsFactor = cut(data[,"lat"], latCut, labels=FALSE)
-  lonAsFactor = cut(data[,"lon"], lonCut, labels=FALSE)
+  latAsFactor = cut(unlist(data[, varNames[1]]), latCut, labels=FALSE)
+  lonAsFactor = cut(unlist(data[, varNames[2]]), lonCut, labels=FALSE)
   
   map = tapply(data[,var], INDEX=list(latAsFactor, lonAsFactor),
                FUN=FUN, ...)
@@ -105,11 +106,11 @@ table2array = function(data, var, lat, lon, start, end,
   coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy)
   times  = createTimeAxis(start=start, end=end, frequency=frequency, center=TRUE)
   
-  latAsFactor  = cut(data[, varNames[1]], coords$psi$lat, labels=FALSE)
-  lonAsFactor  = cut(data[, varNames[2]], coords$psi$lon, labels=FALSE)
-  timeAsFactor = cut(data[, varNames[3]], times$bounds, labels=FALSE)
+  latAsFactor  = cut(unlist(data[, varNames[1]]), coords$psi$lat, labels=FALSE)
+  lonAsFactor  = cut(unlist(data[, varNames[2]]), coords$psi$lon, labels=FALSE)
+  timeAsFactor = cut(unlist(data[, varNames[3]]), times$bounds, labels=FALSE)
   
-  map0 = tapply(data[,var], INDEX=list(latAsFactor, lonAsFactor, timeAsFactor),
+  map0 = tapply(unlist(data[, var]), INDEX=list(latAsFactor, lonAsFactor, timeAsFactor),
                 FUN=FUN, na.rm=TRUE)
   
   rows    = seq_along(coords$rho$lat)
