@@ -9,3 +9,5 @@ domains$peruNC    = list(x=c(-87,-73), y=c(-16,-2))
 domains$peru2     = list(x=c(-88,-70), y=c(-20,-2))
 domains$peru3     = list(x=c(-93,-70), y=c(-20,6))
 domains$ESPacific = list(x=c(-100,-65), y=c(-50,10))
+domains$EPO       = list(x=c(-150,-70), y=c(-50,50))
+
