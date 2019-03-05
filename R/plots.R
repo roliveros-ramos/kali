@@ -29,6 +29,8 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
   # lonData = .checkLongitude(lon)
   # if(!is.null(lonData$ind)) center = 180
   
+  pm = .findPrimeMeridian(lon)
+  
   if(!isTRUE(legend)) {
     .image.mapnl(lon=lon, lat=lat, z=z, center=center, hires=hires, add=add, nlevel=nlevel, 
                  col=col, land.col=land.col, sea.col=sea.col, boundaries.col=boundaries.col, 
@@ -59,7 +61,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
     if (!info$poly.grid) {
       image(x=lon, y=lat, z=z, add = add, col = col, axes=FALSE, 
             xlab="", ylab="", ...)
-      mapDetails(center=center, hires=hires,col=land.col, interior=FALSE, 
+      mapDetails(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
                  axes=axes, border=border, boundaries.col=boundaries.col,
                  grid=grid, grid.col=grid.col)    
     }
@@ -67,7 +69,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
       poly.image(x=lon, y=lat, z=z, add = add, col = col, midpoint = midpoint, 
                  border = border, lwd.poly = lwd, axes=FALSE, 
                  xlab="", ylab="",...)
-      mapDetails(center=center, hires=hires,col=land.col, interior=FALSE, 
+      mapDetails(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
                  axes=axes, border=border, boundaries.col=boundaries.col,
                  grid=grid, grid.col=grid.col)  
     }
@@ -176,6 +178,9 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
     domain = x
     x      = NA
   }
+  
+  pm = .findPrimeMeridian(x)
+  
   xy = xy.coords(x, y)
   xy$xlab = ""
   xy$ylab = ""
@@ -196,7 +201,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
     plot.new()
     plot.window(xlim=xlim, ylim=ylim, xaxs=xaxs, yaxs=yaxs, asp=asp)
     .plotSea(col=sea.col)
-    mapDetails(center=center, hires=hires, col=land.col, interior=interior, 
+    mapDetails(primeMeridian=pm, hires=hires, col=land.col, interior=interior, 
                axes=axes, border=border, boundaries.col=boundaries.col,
                grid=grid, grid.col=grid.col, cex.axis=cex.axis, fill=fill)    
     title(main=main)
@@ -209,27 +214,35 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
 
 # mapDetails --------------------------------------------------------------
 
-mapDetails = function(center=0, hires=FALSE, col="black", interior=FALSE, 
+mapDetails = function(primeMeridian="center", hires=FALSE, col="black", interior=FALSE, 
                       axes=TRUE, border=TRUE, boundaries.col="black",
-                      grid=TRUE, grid.col="white", cex.axis=0.75, fill=TRUE, ...) {
+                      grid=TRUE, grid.col="white", cex.axis=0.75, fill=TRUE, 
+                      boundary = TRUE, ...) {
   
-  mapa = if (hires) {
-    require(mapdata)
-    "worldHires"
-  }
-  else {
-    require(maps)
-    "world"
+  primeMeridian = match.arg(primeMeridian, choices=c("center", "left"))
+  
+  if(hires) {
+    if(!requireNamespace("mapdata", quietly = TRUE)) {
+      warning("You need to install the 'mapdata' package, using hires=FALSE.")
+      hires = FALSE
+    }
   }
   
+  mapa =  if(hires) {
+    if(primeMeridian=="center") "mapdata::worldHires" else "mapdata::world2Hires"
+  } else {
+    if(primeMeridian=="center") "world" else "world2"
+  }
+
   if(isTRUE(grid)) grid(col=grid.col, lty=1)
   
-  map2(mapa, center = center, fill = fill, col = col, add = TRUE, 
-       interior=interior, border=boundaries.col, ...)
+  map(database=mapa, fill = fill, col = col, add = TRUE, interior=interior, 
+      border=boundaries.col, boundary = boundary, ...)
+  
   if(axes) {
     map.axes2(cex.axis=cex.axis)
-    mtext("LONGITUDE", 1, line = 1.8, cex = 0.9*par("cex"))
-    mtext("LATITUDE", 2, line = 2.4, cex = 0.9*par("cex"))    
+    mtext("LONGITUDE", 1, line = 1.8*cex.axis/0.75, cex = 0.9*par("cex"))
+    mtext("LATITUDE", 2, line = 2.4*cex.axis/0.75, cex = 0.9*par("cex"))    
   } else {
     if(border) box()
   }
