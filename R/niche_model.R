@@ -639,7 +639,7 @@ predict.niche.models = function(object, model=NULL, newdata=NULL, pred.info=NULL
   
   if(interp) {
     DateStamp("Performing bilinear spatial interpolation over mask...")
-    pred = fillMap(pred, mask=mask, radius=radius)
+    pred = fillMap(pred, mask=mask, radius=radius, fill.value=NA)
     DateStamp("Performing spline temporal interpolation...")
     pred = interpolateMap(pred, anomalies=FALSE)
   }
