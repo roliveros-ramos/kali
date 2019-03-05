@@ -20,6 +20,7 @@ checkLongitude = function(x, primeMeridian="center", ...) {
 }
 
 .findPrimeMeridian = function(x) {
+  if(all(is.na(x))) return("center")
   if(any(x<0)) return("center")
   if(any(x>180)) return("left")
   return("center")

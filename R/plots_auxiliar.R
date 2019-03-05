@@ -62,10 +62,10 @@ createTimeAxis = function(start, end, frequency=12, center=FALSE, shift=TRUE,
 }
 
 # rename map.axes an overwrite map's map.axes?
-map.axes2 = function(cex.axis=0.75, line=-0.4) {
+map.axes2 = function(sides=c(1,2), cex.axis=0.75, line=-0.4) {
   
-  .axis.map(1, "lon", las=1, cex.axis=cex.axis, line=line, tick=FALSE)
-  .axis.map(2, "lat", las=1, cex.axis=cex.axis, line=line, tick=FALSE)
+  .axis.map(sides[1], "lon", las=1, cex.axis=cex.axis, line=line, tick=FALSE)
+  .axis.map(sides[2], "lat", las=1, cex.axis=cex.axis, line=line, tick=FALSE)
   axis(1, labels=FALSE)
   axis(2, labels=FALSE)
   axis(3, labels=FALSE)

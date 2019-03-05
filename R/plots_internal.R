@@ -12,7 +12,9 @@
   
   image(x=lon, y=lat, z=z, col=col, axes=FALSE, add=add, xlab="", ylab="", ...)
   
-  mapDetails(center=center, hires=hires,col=land.col, interior=FALSE, 
+  pm = .findPrimeMeridian(lon)
+  
+  mapDetails(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
              axes=axes, border=border, boundaries.col=boundaries.col,
              grid=grid, grid.col=grid.col)  
   
