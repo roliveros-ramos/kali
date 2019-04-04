@@ -99,9 +99,13 @@
 }
 
 
-.axis.map = function(side, type, ...) {
+.axis.map = function(side, type, usr=NULL, n=5, ...) {
   
-  x = axTicks(side=side)
+  is.x <- side%%2 == 1
+  if (is.null(usr)) usr = par("usr")[if(is.x) 1:2 else 3:4]
+  
+  x = pretty(usr, n=n)
+  
   axis(side=side, at=x, labels=coord2text(coord=x, type=type), ...)
   
   return(invisible(x))
