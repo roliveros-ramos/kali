@@ -93,7 +93,7 @@ explainedDeviance.glm = function(object, fixed=NULL, null=NULL, newdata=NULL, ob
   if(!is.null(newdata)) {
     .getDev = function(mu) object$family$dev.resids(y=obs, mu=mu, wt = 1)
     mm2$dev = colSums(apply(preds, 2, FUN=.getDev)) 
-  } else mm2$dev = sapply(models, FUN=.mexplDev, null=null)
+  } else mm2$dev = devs #sapply(models, FUN=.mexplDev, null=null)
   
   if(!is.null(fixed)) {
     mm2[, fixed] = NULL
