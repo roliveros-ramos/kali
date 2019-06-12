@@ -42,10 +42,9 @@
 
 .getDomain = function(domain, axis) { 
   # create a data file
-  
+  if(is.null(domain)) return(NULL)
   if(!is.character(domain)) domain = deparse(substitute(domain))
   output = domains[[domain]][[axis]]
-  
   return(output)
 }
 
@@ -137,4 +136,12 @@ coord2text = function(coord, type) {
   return(out)
 }
 
+
+findXlim = function(x) {
+  xc = diff(range(checkLongitude(x, "center"), na.rm=TRUE))
+  xl = diff(range(checkLongitude(x, "left"), na.rm=TRUE))
+  pm = if(xc < xl) "center" else "left"
+  out = range(pretty(checkLongitude(x, pm)), na.rm=TRUE)
+  return(out)
+}
 

@@ -161,7 +161,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
 #' image.map(mackerel)
 #' image.map(domain="peru")
 #' @export
-plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0, 
+plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0, 
                     hires=FALSE, land.col="darkolivegreen4", sea.col="aliceblue", 
                     boundaries.col = "black", grid.col="white", grid=TRUE,
                     cex=0.5, pch=19, main=NULL, add=FALSE, axes=TRUE, 
@@ -170,6 +170,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
                     ...) {
   
   if(missing(x)) x = NA
+  
   if(is.data.frame(x) & is.null(y)) {
     names(x) = tolower(names(x))
     y = x$lat
@@ -181,21 +182,28 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
     x      = NA
   }
   
-  if(is.null(xlim)) xlim = .getDomain(domain, "x")
-  if(is.null(xlim)) xlim = range(pretty(xy$x), na.rm=TRUE)
+  xy = xy.coords(x, y)
+  xy$xlab = ""
+  xy$ylab = ""
   
-  if(is.null(ylim)) ylim = .getDomain(domain, "y")
+  if(!is.null(domain)) {
+    if(!is.null(xlim)) warning("Domain specified, ignoring 'xlim'.")
+    xlim = .getDomain(domain, "x")
+    if(!is.null(ylim)) warning("Domain specified, ignoring 'ylim'.")
+    ylim = .getDomain(domain, "y")
+    if(!is.null(primeMeridian)) 
+      warning("Domain specified, ignoring 'primeMeridian'.")
+    primeMeridian = NULL
+  }
+  
+  if(is.null(xlim)) xlim = findXlim(xy$x)
   if(is.null(ylim)) ylim = range(pretty(xy$y), na.rm=TRUE)
   
   if(is.null(primeMeridian)) primeMeridian = .findPrimeMeridian(x)
   primeMeridian = match.arg(primeMeridian, c("center", "left"))
   
   x = checkLongitude(x, primeMeridian = primeMeridian)
-  
-  xy = xy.coords(x, y)
-  xy$xlab = ""
-  xy$ylab = ""
-  
+ 
 
   
   if(!add) {
