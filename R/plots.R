@@ -166,7 +166,8 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
                     boundaries.col = "black", grid.col="white", grid=TRUE,
                     cex=0.5, pch=19, main=NULL, add=FALSE, axes=TRUE, 
                     border=!axes, asp=NA, axs="i", xaxs=axs, yaxs=axs, cex.axis=0.75, 
-                    interior=FALSE, fill=TRUE, ...) {
+                    interior=FALSE, fill=TRUE, primeMeridian=NULL, 
+                    ...) {
   
   if(missing(x)) x = NA
   if(is.data.frame(x) & is.null(y)) {
@@ -174,28 +175,28 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NA, center=0,
     y = x$lat
     x = x$lon
   }
+  
   if(is.character(x)) {
     domain = x
     x      = NA
   }
   
-  pm = .findPrimeMeridian(x)
+  if(is.null(xlim)) xlim = .getDomain(domain, "x")
+  if(is.null(xlim)) xlim = range(pretty(xy$x), na.rm=TRUE)
+  
+  if(is.null(ylim)) ylim = .getDomain(domain, "y")
+  if(is.null(ylim)) ylim = range(pretty(xy$y), na.rm=TRUE)
+  
+  if(is.null(primeMeridian)) primeMeridian = .findPrimeMeridian(x)
+  primeMeridian = match.arg(primeMeridian, c("center", "left"))
+  
+  x = checkLongitude(x, primeMeridian = primeMeridian)
   
   xy = xy.coords(x, y)
   xy$xlab = ""
   xy$ylab = ""
   
-  if(is.null(xlim)) xlim = .getDomain(domain, "x")
-  if(is.null(xlim)) {
-    xlim = range(pretty(xy$x), na.rm=TRUE)
-    #     xaxs = "r"
-  }
-  
-  if(is.null(ylim)) ylim = .getDomain(domain, "y")
-  if(is.null(ylim)) {
-    ylim = range(pretty(xy$y), na.rm=TRUE)
-    #     yaxs = "r"
-  }
+
   
   if(!add) {
     plot.new()
