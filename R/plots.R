@@ -150,11 +150,36 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
 #' @title Nice scatter plots for georeferenced data
 #' @description This function makes and scatter plot given the longitude and latitude
 #' of the data points.  
+#'
 #' @param x vector of longitude values, or a data.frame containing variables named 'lon'
 #' and 'lat'
 #' @param y vector of latitude values.
+#' @param xlim 
+#' @param ylim 
+#' @param center 
+#' @param hires 
+#' @param land.col 
+#' @param sea.col 
+#' @param boundaries.col 
+#' @param grid.col 
+#' @param grid 
+#' @param cex 
+#' @param pch 
+#' @param main 
+#' @param add 
+#' @param axes 
+#' @param border 
+#' @param asp 
+#' @param axs 
+#' @param xaxs 
+#' @param yaxs 
+#' @param cex.axis 
+#' @param interior 
+#' @param fill 
+#' @param countries 
+#' @param ... 
 #' @param domain
-#' @param \dots Additional parameters to be passed to \code{points}.
+#'
 #' @author Ricardo Oliveros-Ramos
 #' @examples
 #' load(mackerel)

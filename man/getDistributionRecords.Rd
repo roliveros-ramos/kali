@@ -4,8 +4,8 @@
 \alias{getDistributionRecords}
 \title{Get distribution records from on-line databases}
 \usage{
-getDistributionRecords(sp, limit = NULL, source = "gbif", verbose = FALSE,
-  ...)
+getDistributionRecords(sp, limit = NULL, source = "gbif",
+  verbose = FALSE, ...)
 }
 \arguments{
 \item{sp}{The scientific name of the species}

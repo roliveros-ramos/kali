@@ -4,12 +4,14 @@
 \alias{plot.map}
 \title{Nice scatter plots for georeferenced data}
 \usage{
-\method{plot}{map}(x, y = NULL, xlim = NULL, ylim = NULL, domain = NA,
-  center = 0, hires = FALSE, land.col = "darkolivegreen4",
-  sea.col = "aliceblue", boundaries.col = "black", grid.col = "white",
-  grid = TRUE, cex = 0.5, pch = 19, main = NULL, add = FALSE,
-  axes = TRUE, border = !axes, asp = NA, axs = "i", xaxs = axs,
-  yaxs = axs, cex.axis = 0.75, interior = FALSE, fill = TRUE, ...)
+\method{plot}{map}(x, y = NULL, xlim = NULL, ylim = NULL,
+  domain = NULL, center = 0, hires = FALSE,
+  land.col = "darkolivegreen4", sea.col = "aliceblue",
+  boundaries.col = "black", grid.col = "white", grid = TRUE,
+  cex = 0.5, pch = 19, main = NULL, add = FALSE, axes = TRUE,
+  border = !axes, asp = NA, axs = "i", xaxs = axs, yaxs = axs,
+  cex.axis = 0.75, interior = FALSE, fill = TRUE,
+  countries = FALSE, ...)
 }
 \arguments{
 \item{x}{vector of longitude values, or a data.frame containing variables named 'lon'
@@ -17,7 +19,55 @@ and 'lat'}
 
 \item{y}{vector of latitude values.}
 
-\item{\dots}{Additional parameters to be passed to \code{points}.}
+\item{xlim}{}
+
+\item{ylim}{}
+
+\item{domain}{}
+
+\item{center}{}
+
+\item{hires}{}
+
+\item{land.col}{}
+
+\item{sea.col}{}
+
+\item{boundaries.col}{}
+
+\item{grid.col}{}
+
+\item{grid}{}
+
+\item{cex}{}
+
+\item{pch}{}
+
+\item{main}{}
+
+\item{add}{}
+
+\item{axes}{}
+
+\item{border}{}
+
+\item{asp}{}
+
+\item{axs}{}
+
+\item{xaxs}{}
+
+\item{yaxs}{}
+
+\item{cex.axis}{}
+
+\item{interior}{}
+
+\item{fill}{}
+
+\item{countries}{}
+
+\item{...}{}
 }
 \description{
 This function makes and scatter plot given the longitude and latitude
