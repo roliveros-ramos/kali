@@ -16,7 +16,7 @@
   
   mapDetails(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
              axes=axes, border=border, boundaries.col=boundaries.col,
-             grid=grid, grid.col=grid.col)  
+             grid=grid, grid.col=grid.col, water=sea.col)  
   
   return(invisible())
 }
@@ -31,7 +31,7 @@
   return(list(lon=xlon$x, ind=xlon$ix))
 }
 
-.plotSea = function(col="lightblue", x0=-300, y0=-150) {
+.plotSea = function(col="lightblue", x0=-400, y0=-150) {
   
   x1 = -x0
   y1 = -y0
@@ -104,8 +104,9 @@
   if (is.null(usr)) usr = par("usr")[if(is.x) 1:2 else 3:4]
   
   x = pretty(usr, n=n)
+  xc = checkLongitude(x, "center")
   
-  axis(side=side, at=x, labels=coord2text(coord=x, type=type), ...)
+  axis(side=side, at=x, labels=coord2text(coord=xc, type=type), ...)
   
   return(invisible(x))
 }
@@ -142,6 +143,36 @@ findXlim = function(x) {
   xl = diff(range(checkLongitude(x, "left"), na.rm=TRUE))
   pm = if(xc < xl) "center" else "left"
   out = range(pretty(checkLongitude(x, pm)), na.rm=TRUE)
+  attr(out, "pm") = pm
   return(out)
 }
 
+addPM = function(xlim) {
+  pm = attr(xlim, "pm")
+  if(!is.null(pm)) return(x)
+  dd = diff(xlim)
+  v0 = if(xlim[2]>=0) "P" else "N"
+  v1 = if(xlim[1]>=0) "P" else "N"
+  v2 = if(dd>=0) "C" else "D"
+  if(v1=="P" & v2=="C") attr(xlim, "pm") = .findPrimeMeridian(xlim)
+  if(v1=="P" & v2=="D") {
+    if(xlim[1]>=180) {
+      xlim = sort(checkLongitude(xlim, "center"))
+      attr(xlim, "pm") = "center"
+    } else {
+      if(v0=="N") {
+        xlim = checkLongitude(xlim, "left")
+        attr(xlim, "pm") = "left"
+      } else {
+        xlim = c(-180, 180)
+        attr(xlim, "pm") = "center"
+      }
+    }
+  }
+  if(v1=="N" & v2=="C") attr(xlim, "pm") = "center"
+  if(v1=="N" & v2=="D") {
+    xlim = c(-180, 180)
+    attr(xlim, "pm") = "center"
+  }
+  return(xlim)
+}

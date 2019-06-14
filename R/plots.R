@@ -63,7 +63,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
             xlab="", ylab="", ...)
       mapDetails(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
                  axes=axes, border=border, boundaries.col=boundaries.col,
-                 grid=grid, grid.col=grid.col)    
+                 grid=grid, grid.col=grid.col, water=sea.col)    
     }
     else {
       poly.image(x=lon, y=lat, z=z, add = add, col = col, midpoint = midpoint, 
@@ -71,7 +71,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
                  xlab="", ylab="",...)
       mapDetails(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
                  axes=axes, border=border, boundaries.col=boundaries.col,
-                 grid=grid, grid.col=grid.col)  
+                 grid=grid, grid.col=grid.col, water=sea.col)  
     }
     big.par = par(no.readonly = TRUE)
   }
@@ -166,8 +166,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
                     boundaries.col = "black", grid.col="white", grid=TRUE,
                     cex=0.5, pch=19, main=NULL, add=FALSE, axes=TRUE, 
                     border=!axes, asp=NA, axs="i", xaxs=axs, yaxs=axs, cex.axis=0.75, 
-                    interior=FALSE, fill=TRUE, primeMeridian=NULL, 
-                    ...) {
+                    interior=FALSE, fill=TRUE, countries=FALSE, ...) {
   
   if(missing(x)) x = NA
   
@@ -199,25 +198,24 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
   if(is.null(xlim)) xlim = findXlim(xy$x)
   if(is.null(ylim)) ylim = range(pretty(xy$y), na.rm=TRUE)
   
-  if(is.null(primeMeridian)) primeMeridian = .findPrimeMeridian(x)
-  primeMeridian = match.arg(primeMeridian, c("center", "left"))
+  xlim = addPM(xlim)
+  pm = attr(xlim, "pm")
   
-  x = checkLongitude(x, primeMeridian = primeMeridian)
- 
+  x = checkLongitude(x, primeMeridian = pm)
 
-  
   if(!add) {
     plot.new()
     plot.window(xlim=xlim, ylim=ylim, xaxs=xaxs, yaxs=yaxs, asp=asp)
     .plotSea(col=sea.col)
     mapDetails(primeMeridian=pm, hires=hires, col=land.col, interior=interior, 
                axes=axes, border=border, boundaries.col=boundaries.col,
-               grid=grid, grid.col=grid.col, cex.axis=cex.axis, fill=fill)    
+               grid=grid, grid.col=grid.col, cex.axis=cex.axis, fill=fill, 
+               water=sea.col, countries=countries)    
     title(main=main)
   }
   points(xy, cex=cex, pch=pch, ...)
   
-  return(invisible())
+  return(invisible(pm))
 }
 
 
@@ -226,7 +224,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
 mapDetails = function(primeMeridian="center", hires=FALSE, col="black", interior=FALSE, 
                       axes=TRUE, border=TRUE, boundaries.col="black",
                       grid=TRUE, grid.col="white", cex.axis=0.75, fill=TRUE, 
-                      boundary = TRUE, ...) {
+                      boundary = TRUE, water=NULL, countries=FALSE, ...) {
   
   primeMeridian = match.arg(primeMeridian, choices=c("center", "left"))
   
@@ -237,16 +235,34 @@ mapDetails = function(primeMeridian="center", hires=FALSE, col="black", interior
     }
   }
   
-  mapa =  if(hires) {
-    if(primeMeridian=="center") "mapdata::worldHires" else "mapdata::world2Hires"
-  } else {
-    if(primeMeridian=="center") "world" else "world2"
-  }
+  # mapa =  if(hires) {
+  #   if(primeMeridian=="center") "mapdata::worldHires" else "mapdata::world2Hires"
+  # } else {
+  #   if(primeMeridian=="center") "world" else "world2"
+  # }
 
+  mapa = if(primeMeridian=="center") "world" else "world2"
+  
+  wrap = ifelse(primeMeridian=="center", c(-180,180), c(0,360))
+  
   if(isTRUE(grid)) grid(col=grid.col, lty=1)
   
-  map(database=mapa, fill = fill, col = col, add = TRUE, interior=interior, 
-      border=boundaries.col, boundary = boundary, ...)
+  map(database=mapa, fill = fill, col = col, add = TRUE, interior=FALSE, 
+      border=col, boundary = boundary, ...)
+  
+  if(!is.null(water)) {
+    if(primeMeridian=="center") {
+      map("lakes", fill = TRUE, col = water, add = TRUE, border=water, ...)
+    } else {
+      lakes = map("lakes", plot=FALSE)
+      lakes$x = checkLongitude(lakes$x, primeMeridian = "left")
+      map(lakes, fill = TRUE, col = water, add = TRUE, border=water, ...)
+    }
+  }
+  
+  if(isTRUE(countries)) 
+    map(database=mapa, fill = FALSE, col = boundaries.col, add = TRUE)
+  
   
   if(axes) {
     map.axes2(cex.axis=cex.axis)
