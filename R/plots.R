@@ -215,9 +215,6 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
     xlim = .getDomain(domain, "x")
     if(!is.null(ylim)) warning("Domain specified, ignoring 'ylim'.")
     ylim = .getDomain(domain, "y")
-    if(!is.null(primeMeridian)) 
-      warning("Domain specified, ignoring 'primeMeridian'.")
-    primeMeridian = NULL
   }
   
   if(is.null(xlim)) xlim = findXlim(xy$x)
