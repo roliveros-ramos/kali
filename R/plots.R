@@ -191,7 +191,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
                     boundaries.col = "black", grid.col="white", grid=TRUE,
                     cex=0.5, pch=19, main=NULL, add=FALSE, axes=TRUE, 
                     border=!axes, asp=NA, axs="i", xaxs=axs, yaxs=axs, cex.axis=0.75, 
-                    interior=FALSE, fill=TRUE, countries=FALSE, ...) {
+                    interior=FALSE, fill=TRUE, countries=FALSE, nx=NULL, ny=nx, ...) {
   
   if(missing(x)) x = NA
   
@@ -232,7 +232,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
     mapDetails(primeMeridian=pm, hires=hires, col=land.col, interior=interior, 
                axes=axes, border=border, boundaries.col=boundaries.col,
                grid=grid, grid.col=grid.col, cex.axis=cex.axis, fill=fill, 
-               water=sea.col, countries=countries)    
+               water=sea.col, countries=countries, nx=nx, ny=ny)    
     title(main=main)
   }
   points(xy, cex=cex, pch=pch, ...)
@@ -246,7 +246,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
 mapDetails = function(primeMeridian="center", hires=FALSE, col="black", interior=FALSE, 
                       axes=TRUE, border=TRUE, boundaries.col="black",
                       grid=TRUE, grid.col="white", cex.axis=0.75, fill=TRUE, 
-                      boundary = TRUE, water=NULL, countries=FALSE, ...) {
+                      boundary = TRUE, water=NULL, countries=FALSE, nx, ny, ...) {
   
   primeMeridian = match.arg(primeMeridian, choices=c("center", "left"))
   
@@ -267,7 +267,7 @@ mapDetails = function(primeMeridian="center", hires=FALSE, col="black", interior
   
   wrap = ifelse(primeMeridian=="center", c(-180,180), c(0,360))
   
-  if(isTRUE(grid)) grid(col=grid.col, lty=1)
+  if(isTRUE(grid)) grid(nx=nx, ny=ny, col=grid.col, lty=1)
   
   map(database=mapa, fill = fill, col = col, add = TRUE, interior=FALSE, 
       border=col, boundary = boundary, ...)
@@ -297,7 +297,7 @@ mapDetails = function(primeMeridian="center", hires=FALSE, col="black", interior
   return(invisible())
 }
 
-plot.domain = function(domain=NA, xlim=NULL, ylim=NULL, col="red", lwd=1, ...) {
+plot.domain = function(domain=NA, xlim=NULL, ylim=NULL, col="red", lwd=1, fill=NA, ...) {
   
   if(is.null(xlim)) xlim = .getDomain(domain, "x")
   if(is.null(xlim)) stop("latitudinal domain limits has not been specified.")
@@ -307,7 +307,7 @@ plot.domain = function(domain=NA, xlim=NULL, ylim=NULL, col="red", lwd=1, ...) {
   
   xpol = c(xlim, rev(xlim))
   ypol = c(ylim[1],ylim[1],ylim[2],ylim[2])
-  polygon(x=xpol, y=ypol, border=col, lwd=lwd, ...)
+  polygon(x=xpol, y=ypol, border=col, lwd=lwd, col=fill, ...)
   
   return(invisible())
 }
