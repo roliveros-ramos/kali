@@ -86,7 +86,7 @@ toCamel = function(x, split=" ", lower=FALSE) {
   return(x)
 }
 
-checkScientificName = function(sp) {
+check_taxon = function(sp, na.return=FALSE, verbose=TRUE) {
   
   if(!requireNamespace("taxize", quietly = TRUE)) 
     stop("You need to install the 'taxize' package.")
@@ -94,12 +94,19 @@ checkScientificName = function(sp) {
   .checkScientificName = function(sp) {
     tmp = taxize::gnr_resolve(names = sp, canonical = TRUE)$matched_name2
     tmp = names(which.max(table(tmp)))
+    isNA = FALSE
     if(is.null(tmp)) {
-      message(sprintf("Name '%s' not found, returning original name.", sp))
-      tmp = sp
+      if(isTRUE(na.return)) {
+        if(isTRUE(verbose)) message(sprintf("Name '%s' not found, returning NA.", sp))
+        tmp = NA_character_
+        isNA = TRUE
+      } else {
+        if(isTRUE(verbose)) message(sprintf("Name '%s' not found, returning original name.", sp))
+        tmp = sp 
+      }
     }
     id = identical(sp, tmp)
-    if(!id) message(sprintf("Species '%s' was corrected to '%s'.", sp, tmp))
+    if(!id & !isNA & isTRUE(verbose)) message(sprintf("Species '%s' was corrected to '%s'.", sp, tmp))
     return(tmp)
   }
   out = unlist(sapply(sp, .checkScientificName))
@@ -109,6 +116,15 @@ checkScientificName = function(sp) {
   return(out)
 }
 
+get_taxon = function(x, rank, db="itis") {
+  if(length(rank)!=1) stop("Only one taxon is allowed.")
+  db = match.arg(db, c("itis", "ncbi", "both"))
+  isna = is.na(x)
+  tmp = tax_name(query=x[!isna], db=db, get=rank, messages=FALSE, ask=FALSE)
+  out = character(length(x))
+  out[which(!isna)] = tmp[, rank]
+  return(out)
+}
 
 #' Weighted random sampling with a reservoir
 #'
