@@ -149,7 +149,7 @@ findXlim = function(x) {
 
 addPM = function(xlim) {
   pm = attr(xlim, "pm")
-  if(!is.null(pm)) return(x)
+  if(!is.null(pm)) return(xlim)
   dd = diff(xlim)
   v0 = if(xlim[2]>=0) "P" else "N"
   v1 = if(xlim[1]>=0) "P" else "N"
