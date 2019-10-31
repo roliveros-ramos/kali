@@ -86,54 +86,6 @@ toCamel = function(x, split=" ", lower=FALSE) {
   return(x)
 }
 
-check_taxon = function(x, na.return=FALSE, verbose=TRUE) {
-  
-  if(!requireNamespace("taxize", quietly = TRUE)) 
-    stop("You need to install the 'taxize' package.")
-  
-  if(is.factor(x)) x = as.character(x)
-  if(!is.character(x)) stop("x must be a character vector.")
-  
-  .checkScientificName = function(x) {
-    tmp = taxize::gnr_resolve(names = x, canonical = TRUE)$matched_name2
-    tmp = names(which.max(table(tmp)))
-    isNA = FALSE
-    if(is.null(tmp)) {
-      if(isTRUE(na.return)) {
-        if(isTRUE(verbose)) message(sprintf("Name '%s' not found, returning NA.", x))
-        tmp = NA_character_
-        isNA = TRUE
-      } else {
-        if(isTRUE(verbose)) message(sprintf("Name '%s' not found, returning original name.", x))
-        tmp = x 
-      }
-    }
-    id = identical(x, tmp)
-    if(!id & !isNA & isTRUE(verbose)) message(sprintf("Species '%s' was corrected to '%s'.", x, tmp))
-    return(tmp)
-  }
-  out = unlist(sapply(x, .checkScientificName))
-  if(is.null(out)) {
-    
-  }
-  return(out)
-}
-
-get_taxon = function(x, rank, db="itis") {
-  
-  if(length(rank)!=1) stop("Only one taxon is allowed.")
-  
-  if(is.factor(x)) x = as.character(x)
-  if(!is.character(x)) stop("x must be a character vector.")
-  
-  db = match.arg(db, c("itis", "ncbi", "both"))
-  isna = is.na(x)
-  tmp = tax_name(query=x[!isna], db=db, get=rank, messages=FALSE, ask=FALSE)
-  out = character(length(x))
-  out[which(!isna)] = tmp[, rank]
-  return(out)
-  
-}
 
 #' Weighted random sampling with a reservoir
 #'
