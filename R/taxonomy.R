@@ -44,8 +44,10 @@ get_taxon = function(x, rank, db="itis") {
   xna = x[!isna]
   tmp = tax_name(query=xna, db=db, get=rank, messages=FALSE, ask=FALSE)[, rank]
   xind = which(is.na(tmp) & .is_binomial(xna))
-  last_x = .get_first(xna[xind])
-  tmp[xind] = tax_name(query=last_x, db=db, get=rank, messages=FALSE, ask=FALSE)[, rank]
+  if(length(xind)>0) {
+    last_x = .get_first(xna[xind])
+    tmp[xind] = tax_name(query=last_x, db=db, get=rank, messages=FALSE, ask=FALSE)[, rank]    
+  }
   out = character(length(x))
   out[which(!isna)] = tmp
   return(out)
