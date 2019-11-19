@@ -18,7 +18,7 @@
 #' image.map(lon=anchovy$lon, lat=anchovy$lat, z=anchovy$z)
 #' @export
 image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FALSE, nlevel = 1000, horizontal = FALSE, 
-                      legend.shrink = 0.9, legend.width = 1.2, 
+                      legend.shrink = 0.9, legend.width = 1.2, slice=NULL,
                       legend.mar = ifelse(horizontal, 3.1, 5.1), legend.lab = NULL, graphics.reset = FALSE, 
                       bigplot = NULL, smallplot = NULL, legend.only = FALSE, 
                       col = rev(rainbow(nlevel/10, start = 0/6, end = 4/6)), 
@@ -26,8 +26,15 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
                       midpoint = FALSE, border = TRUE, lwd = 1, land.col="black",
                       sea.col="white", boundaries.col="grey", grid=FALSE, grid.col="white", ...) {
   
-  # lonData = .checkLongitude(lon)
-  # if(!is.null(lonData$ind)) center = 180
+  if(!is.null(attr(z, "longitude"))) lon = attr(z, "lon")
+  if(!is.null(attr(z, "latitude"))) lat = attr(z, "lat")
+    
+  if(length(dim(z))==3) {
+    if(!is.null(slice)) z = z[, , slice]
+    if(is.null(slice)) stop("Must specify an slice for plotting arrays.")
+  }
+  
+  if(length(dim(z))>3) stop("Only arrays of 3-dimensions are supported.")
   
   pm = .findPrimeMeridian(lon)
   
@@ -223,7 +230,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
   xlim = addPM(xlim)
   pm = attr(xlim, "pm")
   
-  x = checkLongitude(x, primeMeridian = pm)
+  xy$x = checkLongitude(xy$x, primeMeridian = pm)
 
   if(!add) {
     plot.new()
