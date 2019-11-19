@@ -93,25 +93,51 @@ table2grid = function(data, var, lat, lon, dx=dy, dy=dx, FUN=sum,
   rownames(map) = rnames
   colnames(map) = cnames
   
+  attr(map, "longitude") = rnames
+  attr(map, "latitude") = cnames
+  
   return(map)
 }
 
 # convert a data.frame to an array
 table2array = function(data, var, lat, lon, start, end, 
                        dx, dy=dx, frequency=12, FUN=sum, toPA=FALSE,
-                       varNames=c("lat", "lon", "time")) {
+                       varNames=c("lat", "lon", "time"), ...) {
+  
   
   FUN = match.fun(FUN)
   
-  coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy)
+  if(length(lat)< 2 | length(lon) < 2) stop("At lest a pair of lat and lon values must be provided.")
+  
+  latL = length(lat) 
+  lonL = length(lon)
+  
+  if(latL == 2) {  
+    coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy)
+    latCut = coords$psi$lat
+    cnames = coords$rho$lat
+  } else {
+    latCut = sort(lat)
+    cnames = latCut[-1] - diff(latCut)
+  }
+  
+  if(lonL == 2) {  
+    coords = createGridAxes(lat=lat, lon=lon, dx=dx, dy=dy)
+    lonCut = coords$psi$lon
+    rnames = coords$rho$lon
+  } else {
+    lonCut = sort(lon)
+    rnames = lonCut[-1] - diff(lonCut)
+  }
+  
   times  = createTimeAxis(start=start, end=end, frequency=frequency, center=TRUE)
   
-  latAsFactor  = cut(unlist(data[, varNames[1]]), coords$psi$lat, labels=FALSE)
-  lonAsFactor  = cut(unlist(data[, varNames[2]]), coords$psi$lon, labels=FALSE)
-  timeAsFactor = cut(unlist(data[, varNames[3]]), times$bounds, labels=FALSE)
+  latAsFactor  = cut(unlist(data[, varNames[1]]), latCut, labels=FALSE)
+  lonAsFactor  = cut(unlist(data[, varNames[2]]), lonCut, labels=FALSE)
+  timeAsFactor = cut(unlist(data[, varNames[3]]), times$bounds, labels=FALSE, right = FALSE)
   
   map0 = tapply(unlist(data[, var]), INDEX=list(latAsFactor, lonAsFactor, timeAsFactor),
-                FUN=FUN, na.rm=TRUE)
+                FUN=FUN, ...)
   
   rows    = seq_along(coords$rho$lat)
   cols    = seq_along(coords$rho$lon)
@@ -141,6 +167,10 @@ table2array = function(data, var, lat, lon, start, end,
   dimnames(map) = list(coords$rho$lon, coords$rho$lat, round(times$center,2))
   
   if(toPA) map=.toPA(map)
+  
+  attr(map, "longitude") = rnames
+  attr(map, "latitude")  = cnames
+  attr(map, "time")      = times$center
   
   return(map)
 }
