@@ -7,7 +7,8 @@ check_taxon = function(x, na.return=FALSE, verbose=TRUE) {
   if(is.factor(x)) x = as.character(x)
   if(!is.character(x)) stop("x must be a character vector.")
   
-  .checkScientificName = function(x) {
+  .checkScientificName = function(x, na.return, verbose) {
+    if(is.na(x)) return(NA)
     tmp = taxize::gnr_resolve(names = x, canonical = TRUE)$matched_name2
     tmp = names(which.max(table(tmp)))
     isNA = FALSE
@@ -25,14 +26,26 @@ check_taxon = function(x, na.return=FALSE, verbose=TRUE) {
     if(!id & !isNA & isTRUE(verbose)) message(sprintf("Species '%s' was corrected to '%s'.", x, tmp))
     return(tmp)
   }
-  out = unlist(sapply(x, .checkScientificName))
+  
+  sx = na.omit(unique(x))
+  
+  out = unlist(sapply(sx, .checkScientificName, 
+                      na.return=na.return, verbose=verbose))
+  
+  out = out[x]
+  names(out) = NULL
+  
   if(is.null(out)) {
-    
+    # case?
   }
+  
   return(out)
 }
 
 get_taxon = function(x, rank, db="itis") {
+  
+  if(!requireNamespace("taxize", quietly = TRUE)) 
+    stop("You need to install the 'taxize' package.")
   
   if(length(rank)!=1) stop("Only one taxon is allowed.")
   
@@ -41,15 +54,16 @@ get_taxon = function(x, rank, db="itis") {
   
   db = match.arg(db, c("itis", "ncbi", "both"))
   isna = is.na(x)
-  xna = x[!isna]
-  tmp = tax_name(query=xna, db=db, get=rank, messages=FALSE, ask=FALSE)[, rank]
+  xna = unique(x[!isna])
+  tmp = taxize::tax_name(query=xna, db=db, get=rank, messages=FALSE, ask=FALSE)[, rank]
   xind = which(is.na(tmp) & .is_binomial(xna))
   if(length(xind)>0) {
     last_x = .get_first(xna[xind])
-    tmp[xind] = tax_name(query=last_x, db=db, get=rank, messages=FALSE, ask=FALSE)[, rank]    
+    tmp[xind] = taxize::tax_name(query=last_x, db=db, get=rank, messages=FALSE, ask=FALSE)[, rank]    
   }
-  out = character(length(x))
-  out[which(!isna)] = tmp
+  names(tmp) = xna
+  out = tmp[x]
+  names(out) = NULL
   return(out)
   
 }
