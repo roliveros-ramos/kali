@@ -183,6 +183,16 @@ calculateThresholds = function(data, coordNames = c("lat", "lon"),
   return(output)
 }
 
+
+threshold = function(object, opt.methods="MinROCdist") {
+  object$model$fitted = object$fitted.values
+  out = calculateThresholds(data=object$model, coordNames=names(object$var.summary),
+                            models="fitted", obs=as.character(formula(object))[2], opt.methods = opt.methods)
+  out = setNames(as.numeric(out), nm=rownames(out))
+  return(out)
+}
+
+
 cleanBIOMOD = function() {
   
   if(exists("Biomod.material", env=globalenv())) rm(list="Biomod.material", envir=globalenv())
