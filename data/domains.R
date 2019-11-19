@@ -11,4 +11,5 @@ domains$peru3     = list(x=c(-93,-70),   y=c(-20,6))
 domains$ESPacific = list(x=c(-100,-65),  y=c(-50,10))
 domains$pacific   = list(x=c(+110, -70), y=c(-55,70))
 domains$EPO       = list(x=c(-150,-70),  y=c(-50,50))
+domains$CentralA  = list(x=c(-95,-75),  y=c(6, 16))
 
