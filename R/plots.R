@@ -23,7 +23,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
                       bigplot = NULL, smallplot = NULL, legend.only = FALSE, 
                       col = rev(rainbow(nlevel/10, start = 0/6, end = 4/6)), 
                       lab.breaks = NULL, axis.args = NULL, legend.args = NULL, axes=TRUE,
-                      midpoint = FALSE, border = TRUE, lwd = 1, land.col="black",
+                      midpoint = FALSE, border = TRUE, lwd = 1, land.col="black", labels = TRUE,
                       sea.col="white", boundaries.col="grey", grid=FALSE, grid.col="white", ...) {
   
   if(!is.null(attr(z, "longitude"))) lon = attr(z, "lon")
@@ -70,7 +70,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
             xlab="", ylab="", ...)
       mapDetails(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
                  axes=axes, border=border, boundaries.col=boundaries.col,
-                 grid=grid, grid.col=grid.col, water=sea.col)    
+                 grid=grid, grid.col=grid.col, water=sea.col, labels=labels)    
     }
     else {
       poly.image(x=lon, y=lat, z=z, add = add, col = col, midpoint = midpoint, 
@@ -78,7 +78,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
                  xlab="", ylab="",...)
       mapDetails(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
                  axes=axes, border=border, boundaries.col=boundaries.col,
-                 grid=grid, grid.col=grid.col, water=sea.col)  
+                 grid=grid, grid.col=grid.col, water=sea.col, labels=labels)  
     }
     big.par = par(no.readonly = TRUE)
   }
@@ -253,7 +253,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
 mapDetails = function(primeMeridian="center", hires=FALSE, col="black", interior=FALSE, 
                       axes=TRUE, border=TRUE, boundaries.col="black",
                       grid=TRUE, grid.col="white", cex.axis=0.75, fill=TRUE, 
-                      boundary = TRUE, water=NULL, countries=FALSE, nx, ny, ...) {
+                      boundary = TRUE, water=NULL, countries=FALSE, nx, ny, labels=TRUE, ...) {
   
   primeMeridian = match.arg(primeMeridian, choices=c("center", "left"))
   
@@ -295,8 +295,10 @@ mapDetails = function(primeMeridian="center", hires=FALSE, col="black", interior
   
   if(axes) {
     map.axes2(cex.axis=cex.axis)
-    mtext("LONGITUDE", 1, line = 1.8*cex.axis/0.75, cex = 0.9*par("cex"))
-    mtext("LATITUDE", 2, line = 2.4*cex.axis/0.75, cex = 0.9*par("cex"))    
+    if(isTRUE(labels)) {
+      mtext("LONGITUDE", 1, line = 1.8*cex.axis/0.75, cex = 0.9*par("cex"))
+      mtext("LATITUDE", 2, line = 2.4*cex.axis/0.75, cex = 0.9*par("cex"))    
+    }
   } else {
     if(border) box()
   }
