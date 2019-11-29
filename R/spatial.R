@@ -1,12 +1,12 @@
 .longitude2Center = function(x, ...) {
-  if (!any(x > 180)) 
+  if (!any(x > 180, na.rm=TRUE)) 
     return(x)
   x[which(x > 180)] = x[which(x > 180)] - 360
   return(x)
 }
 
 .longitude2Left = function(x, ...) {
-  if (!any(x < 0)) 
+  if (!any(x < 0, na.rm=TRUE)) 
     return(x)
   x[which(x < 0)] = x[which(x < 0)] + 360
   return(x)
