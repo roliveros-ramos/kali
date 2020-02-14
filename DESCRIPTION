@@ -1,13 +1,13 @@
 Package: kali
 Type: Package
 Title: Tools for habitat and niche modeling.
-Version: 0.0.6
+Version: 0.0.6.9001
 Date: 2017-12-08
 Author: Ricardo Oliveros-Ramos
 Maintainer: Ricardo Oliveros-Ramos <ricardo.oliveros@gmail.com>
 Description: Tools for habitat and niche modeling prediction and analysis.
 License: GLP-2
-Depends: fields, maps, akima, PresenceAbsence, bezier, lubridate, tibble
+Depends: fields, maps, akima, PresenceAbsence, bezier, lubridate, tibble, sp
 Suggests: mapdata, animation, ncdf4
 ByteCompile: TRUE
 LazyData: TRUE
