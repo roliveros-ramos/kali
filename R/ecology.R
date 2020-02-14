@@ -1,5 +1,18 @@
 
-assign_areas = function(data, what, latitude="lat", longitude="lon") {
+#' Assign areas to geographical coordinates.
+#'
+#' @param data A data frame including spatial coordinates
+#' @param what the database with the geographic areas. 
+#' Currently, only "longhurst" is accepted.
+#' @param longitude The name of the variable in \code{data} with longitud
+#' information, by default "lat"
+#' @param latitude The name of the variable in \code{data} with latitude
+#' information, by default "lat"
+#' @return
+#' @export
+#'
+#' @examples
+assign_areas = function(data, what, longitude="lon", latitude="lat") {
   
   layer = switch(what,
                  longhurst = kali::longhurst,

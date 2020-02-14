@@ -11,4 +11,4 @@ Depends: fields, maps, akima, PresenceAbsence, bezier, lubridate, tibble, sp
 Suggests: mapdata, animation, ncdf4
 ByteCompile: TRUE
 LazyData: TRUE
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1
