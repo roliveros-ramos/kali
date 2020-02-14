@@ -264,13 +264,13 @@ mapDetails = function(primeMeridian="center", hires=FALSE, col="black", interior
     }
   }
   
-  # mapa =  if(hires) {
-  #   if(primeMeridian=="center") "mapdata::worldHires" else "mapdata::world2Hires"
-  # } else {
-  #   if(primeMeridian=="center") "world" else "world2"
-  # }
+  mapa =  if(hires) {
+    if(primeMeridian=="center") "mapdata::worldHires" else "mapdata::world2Hires"
+  } else {
+    if(primeMeridian=="center") "world" else "world2"
+  }
 
-  mapa = if(primeMeridian=="center") "world" else "world2"
+  # mapa = if(primeMeridian=="center") "world" else "world2"
   
   wrap = ifelse(primeMeridian=="center", c(-180,180), c(0,360))
   
