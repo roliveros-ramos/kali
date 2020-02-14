@@ -3,7 +3,7 @@
 #'
 #' @param data A data frame including spatial coordinates
 #' @param what the database with the geographic areas. 
-#' Currently, only "longhurst" is accepted.
+#' Currently, only "longhurst" and "LME" is accepted.
 #' @param longitude The name of the variable in \code{data} with longitud
 #' information, by default "lat"
 #' @param latitude The name of the variable in \code{data} with latitude
@@ -16,10 +16,12 @@ assign_areas = function(data, what, longitude="lon", latitude="lat") {
   
   layer = switch(what,
                  longhurst = kali::longhurst,
+                 LME       = kali::LME,
                  stop(sprintf(what, "database not available.")))
   
   key   = switch(what,
                  longhurst = "ProvCode",
+                 LME       = "LME_NUMBER",
                  stop(sprintf(what, "database not available.")))
   
   crs = proj4string(layer)

@@ -10,7 +10,7 @@ assign_areas(data, what, longitude = "lon", latitude = "lat")
 \item{data}{A data frame including spatial coordinates}
 
 \item{what}{the database with the geographic areas. 
-Currently, only "longhurst" is accepted.}
+Currently, only "longhurst" and "LME" is accepted.}
 
 \item{longitude}{The name of the variable in \code{data} with longitud
 information, by default "lat"}
