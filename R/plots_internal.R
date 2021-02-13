@@ -99,11 +99,17 @@
 
 
 .axis.map = function(side, type, usr=NULL, n=5, ...) {
+ 
+  if(is.na(side)) return(invisible())
+  
+  old_usr = par("usr")
+  on.exit(par(usr=old_usr))
+  if(is.null(usr)) usr = old_usr
+  par(usr=usr)
   
   is.x <- side%%2 == 1
-  if (is.null(usr)) usr = par("usr")[if(is.x) 1:2 else 3:4]
   
-  x = pretty(usr, n=n)
+  x = pretty(usr[if(is.x) 1:2 else 3:4], n=n)
   xc = checkLongitude(x, "center")
   
   axis(side=side, at=x, labels=coord2text(coord=xc, type=type), ...)
