@@ -1,2 +1,5 @@
 exportPattern("^[[:alpha:]]+")
 S3method('[',niche.models.formulas)
+S3method('explainedDeviance', scam)
+S3method('explainedDeviance', gam)
+S3method('explainedDeviance', glm)
