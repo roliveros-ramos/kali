@@ -9,7 +9,7 @@ check_taxon = function(x, na.return=FALSE, verbose=TRUE) {
   
   .checkScientificName = function(x, na.return, verbose) {
     if(is.na(x)) return(NA)
-    tmp = taxize::gnr_resolve(names = x, canonical = TRUE)$matched_name2
+    tmp = taxize::gnr_resolve(sci = x, canonical = TRUE)$matched_name2
     tmp = names(which.max(table(tmp)))
     isNA = FALSE
     if(is.null(tmp)) {
