@@ -112,7 +112,7 @@ rbind.occ_df = function(..., deparse.level=1) {
     stop("You need to install the 'robis' package (from github).")
   
   if(length(sp)!=1) stop("You must provide only one species name.")
-  sp = checkScientificName(sp)
+  sp = check_taxon(sp)
   vars = c("decimalLongitude", "decimalLatitude", "year", "month", "day", "basisOfRecord")
   dat = robis::occurrence(sp, verbose=verbose)
   if(nrow(dat)<1) {
@@ -158,7 +158,7 @@ rbind.occ_df = function(..., deparse.level=1) {
     stop("You need to install the 'rgbif' package.")
   
   if(length(sp)!=1) stop("You must provide only one species name.")
-  sp = checkScientificName(sp)
+  sp = check_taxon(sp)
   vars = c("decimalLongitude", "decimalLatitude", "year", "month", "day", "basisOfRecord")
   tmp = rgbif::occ_search(scientificName = sp, limit=20)
   ntot = tmp$meta$count
