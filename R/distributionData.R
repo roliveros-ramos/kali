@@ -16,7 +16,7 @@ getDistributionRecords = function(sp, limit=NULL, source="gbif", verbose=FALSE, 
   
   out = lapply(source, .getOccurrence, sp=sp, limit=limit, verbose=verbose)
   out = do.call(rbind, out)
-  ind = duplicated(out)
+  ind = duplicated(as.data.frame(out))
   ndup = sum(ind, na.rm=TRUE)
   if(ndup>0) message(sprintf("Removing %d duplicated records.", ndup))
   out = out[!ind, ]
@@ -27,6 +27,7 @@ getDistributionRecords = function(sp, limit=NULL, source="gbif", verbose=FALSE, 
 
 # S3 methods --------------------------------------------------------------
 
+#' @export
 print.occ_df = function(x, n=NULL, ...) {
   
   attList = attributes(x)
@@ -34,7 +35,7 @@ print.occ_df = function(x, n=NULL, ...) {
   
   cat(spHead)
   
-  tibble:::print.tbl(x, n=n, ...)
+  tibble:::print.tbl_df(x, n=n, ...)
   
   cat("\nCite this dataset as:\n")
   cat(paste(attList$reference, collapse=""))
@@ -43,6 +44,7 @@ print.occ_df = function(x, n=NULL, ...) {
   
 }
 
+#' @export
 rbind.occ_df = function(..., deparse.level=1) {
   
   out = rbind.data.frame(..., deparse.level=deparse.level, 
@@ -61,6 +63,7 @@ rbind.occ_df = function(..., deparse.level=1) {
   
 }
 
+#' @export
 '[.occ_df' = function(x, i, j, drop = FALSE) {
   
   attList = attributes(x)
@@ -143,6 +146,7 @@ rbind.occ_df = function(..., deparse.level=1) {
   attr(out, "source") = "OBIS"
   attr(out, "org") = "Ocean Biogeographic Information System. Intergovernmental Oceanographic Commission of UNESCO"
   attr(out, "web") = "www.iobis.org"
+  attr(out, "all_vars") = names(dat)
   att = attributes(out)
   attr(out, "reference") = sprintf("%s (%d) Distribution records of %s %s [Dataset]. Available: %s. %s. Accessed: %s)\n", 
                                    att$source, year(att$accessed), att$sp, att$author, att$org, att$web, att$accessed)
@@ -190,6 +194,7 @@ rbind.occ_df = function(..., deparse.level=1) {
   attr(out, "source") = "GBIF"
   attr(out, "org") = "GBIF. The Global Biodiversity Information Facility"
   attr(out, "web") = "www.gbif.org"
+  attr(out, "all_vars") = names(dat)
   att = attributes(out)
   attr(out, "reference") = sprintf("%s (%d) Distribution records of %s %s [Dataset]. Available: %s. %s. Accessed: %s)\n", 
                                    att$source, year(att$accessed), att$sp, att$author, att$org, att$web, att$accessed)
