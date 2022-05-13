@@ -149,6 +149,8 @@ findXlim = function(x) {
   xl = diff(range(checkLongitude(x, "left"), na.rm=TRUE))
   pm = if(xc < xl) "center" else "left"
   out = range(pretty(checkLongitude(x, pm)), na.rm=TRUE)
+  if(pm=="center") out = pmax(-180, pmin(out, 180))
+  if(pm=="left") out = pmax(0, pmin(out, 360))
   attr(out, "pm") = pm
   return(out)
 }

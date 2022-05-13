@@ -225,7 +225,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
   }
   
   if(is.null(xlim)) xlim = findXlim(xy$x)
-  if(is.null(ylim)) ylim = range(pretty(xy$y), na.rm=TRUE)
+  if(is.null(ylim)) ylim = pmax(-90, pmin(range(pretty(xy$y), na.rm=TRUE), 90))
   
   xlim = addPM(xlim)
   pm = attr(xlim, "pm")
