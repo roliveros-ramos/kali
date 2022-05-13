@@ -4,16 +4,41 @@
 \alias{image.map}
 \title{Nice image plots for maps}
 \usage{
-image.map(lon, lat, z, center = 0, legend = TRUE, hires = FALSE,
-  add = FALSE, nlevel = 1000, horizontal = FALSE,
-  legend.shrink = 0.9, legend.width = 1.2, slice = NULL,
-  legend.mar = ifelse(horizontal, 3.1, 5.1), legend.lab = NULL,
-  graphics.reset = FALSE, bigplot = NULL, smallplot = NULL,
-  legend.only = FALSE, col = rev(rainbow(nlevel/10, start = 0/6, end =
-  4/6)), lab.breaks = NULL, axis.args = NULL, legend.args = NULL,
-  axes = TRUE, midpoint = FALSE, border = TRUE, lwd = 1,
-  land.col = "black", labels = TRUE, sea.col = "white",
-  boundaries.col = "grey", grid = FALSE, grid.col = "white", ...)
+image.map(
+  lon,
+  lat,
+  z,
+  center = 0,
+  legend = TRUE,
+  hires = FALSE,
+  add = FALSE,
+  nlevel = 1000,
+  horizontal = FALSE,
+  legend.shrink = 0.9,
+  legend.width = 1.2,
+  slice = NULL,
+  legend.mar = ifelse(horizontal, 3.1, 5.1),
+  legend.lab = NULL,
+  graphics.reset = FALSE,
+  bigplot = NULL,
+  smallplot = NULL,
+  legend.only = FALSE,
+  col = rev(rainbow(nlevel/10, start = 0/6, end = 4/6)),
+  lab.breaks = NULL,
+  axis.args = NULL,
+  legend.args = NULL,
+  axes = TRUE,
+  midpoint = FALSE,
+  border = TRUE,
+  lwd = 1,
+  land.col = "black",
+  labels = TRUE,
+  sea.col = "white",
+  boundaries.col = "grey",
+  grid = FALSE,
+  grid.col = "white",
+  ...
+)
 }
 \arguments{
 \item{lon}{vector or matrix of longitude values, following the conventions

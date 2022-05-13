@@ -18,6 +18,9 @@ information, by default "lat"}
 \item{latitude}{The name of the variable in \code{data} with latitude
 information, by default "lat"}
 }
+\value{
+
+}
 \description{
 Assign areas to geographical coordinates.
 }

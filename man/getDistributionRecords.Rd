@@ -4,8 +4,7 @@
 \alias{getDistributionRecords}
 \title{Get distribution records from on-line databases}
 \usage{
-getDistributionRecords(sp, limit = NULL, source = "gbif",
-  verbose = FALSE, ...)
+getDistributionRecords(sp, limit = NULL, source = "gbif", verbose = FALSE, ...)
 }
 \arguments{
 \item{sp}{The scientific name of the species}
@@ -17,6 +16,9 @@ getDistributionRecords(sp, limit = NULL, source = "gbif",
 \item{verbose}{boolean, do you want to know what's happening?}
 
 \item{...}{May be used later}
+}
+\value{
+
 }
 \description{
 Get distribution records from on-line databases
