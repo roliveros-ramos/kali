@@ -98,8 +98,8 @@ of the data points.
 }
 \examples{
 load(mackerel)
-image.map(mackerel)
-image.map(domain="peru")
+plot.map(mackerel)
+plot.map(domain="peru")
 }
 \author{
 Ricardo Oliveros-Ramos

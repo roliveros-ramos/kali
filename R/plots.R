@@ -16,7 +16,7 @@
 #' @examples
 #' load(anchovy)
 #' image.map(lon=anchovy$lon, lat=anchovy$lat, z=anchovy$z)
-#' @export
+#' @export image.map
 image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FALSE, nlevel = 1000, horizontal = FALSE, 
                       legend.shrink = 0.9, legend.width = 1.2, slice=NULL,
                       legend.mar = ifelse(horizontal, 3.1, 5.1), legend.lab = NULL, graphics.reset = FALSE, 
@@ -190,9 +190,9 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
 #' @author Ricardo Oliveros-Ramos
 #' @examples
 #' load(mackerel)
-#' image.map(mackerel)
-#' image.map(domain="peru")
-#' @export
+#' plot.map(mackerel)
+#' plot.map(domain="peru")
+#' @export plot.map
 plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0, 
                     hires=FALSE, land.col="darkolivegreen4", sea.col="aliceblue", 
                     boundaries.col = "black", grid.col="white", grid=TRUE,
