@@ -4,6 +4,7 @@
 #' @param sp The scientific name of the species
 #' @param limit The maximum number of records, NULL gets all records.
 #' @param source The data source (currently only "gbif" and "obis" are supported.)
+#' @param year Range of years to be included in the search.
 #' @param verbose boolean, do you want to know what's happening?
 #' @param ... May be used later
 #'
@@ -12,14 +13,20 @@
 #'
 #' @examples
 #' getDistributionRecords(sp="Manta birostris", limit=300)
-getDistributionRecords = function(sp, limit=NULL, source="gbif", verbose=FALSE, ...) {
+getDistributionRecords = function(sp, limit=NULL, source="gbif", year=NULL, 
+                                  verbose=FALSE, ...) {
   
-  out = lapply(source, .getOccurrence, sp=sp, limit=limit, verbose=verbose)
+  out = list()
+  for(isource in source) {
+    message(sprintf("\nDownloading occurrence data from %s.\n", isource))
+    out[[isource]] = .getOccurrence(sp=sp, source=isource, limit=limit, verbose=verbose, 
+                 year=year)
+  }
   out = do.call(rbind, out)
-  ind = duplicated(as.data.frame(out))
+  check = setdiff(names(out), "provider") # check for duplicated up to provider.
+  ind = duplicated(as.data.frame(out[, check]))
   ndup = sum(ind, na.rm=TRUE)
-  if(ndup>0) message(sprintf("Removing %d duplicated records.", ndup))
-  out = out[!ind, ]
+  if(ndup>0) message(sprintf("\nDetecting up to %d duplicated records, check the dataset before use.", ndup))
   return(out)
   
 }
@@ -40,7 +47,7 @@ print.occ_df = function(x, n=NULL, ...) {
   cat("\nCite this dataset as:\n")
   cat(paste(attList$reference, collapse=""))
   
-  return(invisible())
+  return(invisible(NULL))
   
 }
 
@@ -99,27 +106,44 @@ rbind.occ_df = function(..., deparse.level=1) {
 
 # Internal ----------------------------------------------------------------
 
-.getOccurrence = function(source, sp, limit=NULL, verbose=FALSE) {
+.getOccurrence = function(source, sp, limit=NULL, year=NULL, verbose=FALSE) {
   
   out = switch(source, 
-               gbif = .getOccurrence_GBIF(sp=sp, limit=limit, verbose=verbose),
-               obis = .getOccurrence_OBIS(sp=sp, limit=limit, verbose=verbose)
+               gbif = .getOccurrence_GBIF(sp=sp, limit=limit, year=year, 
+                                          verbose=verbose),
+               obis = .getOccurrence_OBIS(sp=sp, limit=limit, year=year, 
+                                          verbose=verbose)
   )
   return(out)
   
 }
 
-.getOccurrence_OBIS = function(sp, limit=NULL, verbose=FALSE) {
+.getOccurrence_OBIS = function(sp, limit=NULL, year=NULL, verbose=FALSE) {
   
   if(!requireNamespace("robis", quietly = TRUE)) 
     stop("You need to install the 'robis' package (from github).")
   
   if(length(sp)!=1) stop("You must provide only one species name.")
   sp = check_taxon(sp)
-  vars = c("decimalLongitude", "decimalLatitude", "year", "month", "day", "basisOfRecord")
-  dat = robis::occurrence(sp, verbose=verbose)
+  vars = c("decimalLongitude", "decimalLatitude", "year", "month", "day", 
+           "depth", "lifeStage", "basisOfRecord")
+  
+  startdate = NULL
+  enddate   = NULL
+  
+  if(!is.null(year)) {
+    if(!is.numeric(year)) stop("Argument 'year' must be numeric")
+    year = na.omit(year)
+    year = range(c(year, floor(min(year)), ceiling(max(year))), na.rm=TRUE)
+    startdate = as.Date(sprintf("%d-01-01", year[1]))
+    enddate   = as.Date(sprintf("%d-12-31", year[2]))
+  }
+  
+  
+  dat = robis::occurrence(sp, verbose=verbose, limit=limit,
+                          startdate=startdate, enddate=enddate)
   if(nrow(dat)<1) {
-  msg = sprintf("Retrieved %d records of %d (%0.2f%%)\n", 0, 0, 100)
+  msg = sprintf("\nRetrieved %d records of %d (%0.2f%%)\n", 0, 0, 100)
   cat(msg)
     return(NULL)
     }
@@ -129,13 +153,19 @@ rbind.occ_df = function(..., deparse.level=1) {
   dat$day = day(dat$eventDate)
   out = dat[, vars]
   names(out)[1:2] = c("lon", "lat")
-  out = out[complete.cases(out), ]
+  n = nrow(out)
+  out = out[complete.cases(out[, c("year", "month", "day")]), ]
+  n = n - nrow(out)
+  if(n>0) message(sprintf("\nRemoved %d records without date information.", n))
   nc = nchar(out$basisOfRecord)
   out$basisOfRecord[nc<2] = "Unknown"
+  out$basisOfRecord = toCamel(out$basisOfRecord, split="_")
+  out$basisOfRecord[out$basisOfRecord=="Observation"] = "Occurrence" # why?
+  out$lifeStage[out$lifeStage=="Unknown"] = NA
   out = as_tibble(out)
   out = tibble::remove_rownames(out)
   out$basisOfRecord = as.factor(out$basisOfRecord)
-  
+  out$provider = "OBIS"
   spName = names(which.max(table(dat$scientificName)))
   spAuthor = names(which.max(table(dat$scientificNameAuthorship)))
   
@@ -156,32 +186,80 @@ rbind.occ_df = function(..., deparse.level=1) {
   
 }
 
-.getOccurrence_GBIF = function(sp, limit=NULL, verbose=FALSE) {
+.getOccurrence_GBIF = function(sp, limit=NULL, year=NULL, verbose=FALSE) {
   
   if(!requireNamespace("rgbif", quietly = TRUE)) 
     stop("You need to install the 'rgbif' package.")
   
   if(length(sp)!=1) stop("You must provide only one species name.")
   sp = check_taxon(sp)
-  vars = c("decimalLongitude", "decimalLatitude", "year", "month", "day", "basisOfRecord")
-  tmp = rgbif::occ_search(scientificName = sp, limit=20)
+  vars = c("decimalLongitude", "decimalLatitude", "year", "month", "day", 
+           "depth", "lifeStage", "basisOfRecord")
+  
+  oyear = year
+  
+  if(!is.null(year)) {
+    if(!is.numeric(year)) stop("Argument 'year' must be numeric")
+    year = na.omit(year)
+    year = range(c(year, floor(min(year)), ceiling(max(year))), na.rm=TRUE)
+    year = sprintf("%d,%d", year[1], year[2])
+  }
+  
+  tmp = rgbif::occ_search(scientificName = sp, limit=0, year=year, hasCoordinate=TRUE)
   ntot = tmp$meta$count
   if(ntot==0) {
-    msg = sprintf("Retrieved %d records of %d (%0.2f%%)\n", 0, 0, 100)
+    msg = sprintf("\nRetrieved %d records of %d (%0.2f%%)\n", 0, 0, 100)
     cat(msg)
     return(NULL)
   }
-  nrec = if(is.null(limit)) ntot else limit
-  dat = rgbif::occ_search(scientificName = sp, limit=nrec)$data
-  msg = sprintf("Retrieved %d records of %d (%0.2f%%)\n", nrec, ntot, 100*nrec/ntot)
-  cat(msg)
+
+  nrec = if(is.null(limit)) ntot else min(limit, ntot)  
+  
+  if(nrec >= 1e5) {
+    
+    ncount = .getOccNumber_GBIF(sp, year=oyear)
+    split = attr(ncount, "split")
+    split[1] = split[1] - 1 
+    nquery = length(split) - 1
+    
+    output = list()
+    for(i in seq_len(nquery)) {
+      
+      iyear = split[i + c(0, 1)] + c(1, 0)
+      msg = sprintf("Retrieving records from %d to %d...", iyear[1], iyear[2])
+      message(msg)
+      iyear = sprintf("%d,%d", iyear[1], iyear[2])
+      tmp = rgbif::occ_search(scientificName = sp, limit=1e5, year=iyear, hasCoordinate=TRUE)$data
+      msg = sprintf("\tRetrieved %d records (%0.2f%%).\n", nrow(tmp), 100*nrow(tmp)/ntot)
+      message(msg)
+     
+      tmp = tmp[, c(vars, "scientificName")]
+      output[[i]] = tmp
+      
+    }
+    
+    dat = do.call(rbind, output)
+    
+  } else {
+    
+    dat = rgbif::occ_search(scientificName = sp, limit=nrec)$data
+    msg = sprintf("\nRetrieved %d records of %d (%0.2f%%)\n", nrec, ntot, 100*nrec/ntot)
+    message(msg)
+    
+  }
+
   out = dat[, vars]
   names(out)[1:2] = c("lon", "lat")
-  out = out[complete.cases(out), ]
+  n = nrow(out)
+  out = out[complete.cases(out[, c("year", "month", "day")]), ]
+  n = n - nrow(out)
+  if(n>0) message(sprintf("Removed %d records without date information.", n))
   out$basisOfRecord = toCamel(out$basisOfRecord, split="_")
-  out$basisOfRecord[out$basisOfRecord=="Observation"] = "Occurrence"
+  out$basisOfRecord[out$basisOfRecord=="Observation"] = "Occurrence" # why?
+  out$lifeStage[out$lifeStage=="Unknown"] = NA # why?
   out = tibble::remove_rownames(out)
   out$basisOfRecord = as.factor(out$basisOfRecord)
+  out$provider = "GBIF"
   
   tmp = unlist(strsplit(names(which.max(table(dat$scientificName))), split=" "))
   spName = paste(tmp[1:2], collapse=" ")
@@ -204,4 +282,47 @@ rbind.occ_df = function(..., deparse.level=1) {
   
   return(out)
 } 
+
+
+# Count occurrences -------------------------------------------------------
+
+.getOccNumber_GBIF = function(sp, year=NULL, hasCoordinate=TRUE) {
+  
+  if(!requireNamespace("rgbif", quietly = TRUE)) 
+    stop("You need to install the 'rgbif' package.")
+  
+  if(length(sp)!=1) stop("You must provide only one species name.")
+  sp = check_taxon(sp)
+  
+  if(is.null(year)) year = c(1900, lubridate::year(lubridate::today()))
+  if(!is.numeric(year)) stop("Argument 'year' must be numeric")
+  year = na.omit(year)
+  year = range(c(year, floor(min(year)), ceiling(max(year))), na.rm=TRUE)
+  year = seq(from=year[1], to=year[2])
+  
+  out = rep(NA_integer_, length=length(year))
+  
+  for(i in seq_along(year)) {
+    out[i] = rgbif::occ_search(scientificName = sp, limit=0, year=year[i], hasCoordinate=TRUE)$meta$count
+  }
+  names(out) = year
+  
+  tot = sum(out, na.rm=TRUE)
+  
+  nquery = ceiling(tot/1e5) + 1
+  crit = tot/nquery
+  ctot = cumsum(out)
+  
+  split = numeric(nquery+1)
+  split[1] = 1
+  split[nquery+1] = length(year)
+  for(i in seq_len(nquery-1)) split[i+1] = which.max(ctot > (crit*i)) - 1
+  split = year[split]
+  
+  attr(out, "split") = split
+  
+  return(out)
+  
+}
+
 

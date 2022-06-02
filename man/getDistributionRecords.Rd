@@ -4,7 +4,14 @@
 \alias{getDistributionRecords}
 \title{Get distribution records from on-line databases}
 \usage{
-getDistributionRecords(sp, limit = NULL, source = "gbif", verbose = FALSE, ...)
+getDistributionRecords(
+  sp,
+  limit = NULL,
+  source = "gbif",
+  year = NULL,
+  verbose = FALSE,
+  ...
+)
 }
 \arguments{
 \item{sp}{The scientific name of the species}
@@ -12,6 +19,8 @@ getDistributionRecords(sp, limit = NULL, source = "gbif", verbose = FALSE, ...)
 \item{limit}{The maximum number of records, NULL gets all records.}
 
 \item{source}{The data source (currently only "gbif" and "obis" are supported.)}
+
+\item{year}{Range of years to be included in the search.}
 
 \item{verbose}{boolean, do you want to know what's happening?}
 
