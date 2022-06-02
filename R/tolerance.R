@@ -31,6 +31,8 @@
 #' @examples
 getTolerance = function(x, what, split=NULL, ...) {
   
+  if(inherits(x, "tbl")) x = as.data.frame(x)
+  
   tolerance = .getTolerance(x=x, what=what)
   
   if(is.null(split)) return(tolerance)
