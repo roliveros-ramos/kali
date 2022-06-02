@@ -123,6 +123,15 @@ rbind.occ_df = function(..., deparse.level=1) {
   if(!requireNamespace("robis", quietly = TRUE)) 
     stop("You need to install the 'robis' package (from github).")
   
+  # fixing issue with 'curl' 
+  op = get("has_internet_via_proxy", environment(curl::has_internet))
+  # check for internet
+  np = !is.null(curl::nslookup("r-project.org", error = FALSE))
+  assign("has_internet_via_proxy", np, environment(curl::has_internet))
+  # restore old value, to use within functions.
+  on.exit(assign("has_internet_via_proxy", op, environment(curl::has_internet)))
+  
+  
   if(length(sp)!=1) stop("You must provide only one species name.")
   sp = check_taxon(sp)
   vars = c("decimalLongitude", "decimalLatitude", "year", "month", "day", 
