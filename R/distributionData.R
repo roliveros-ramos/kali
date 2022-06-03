@@ -160,6 +160,10 @@ rbind.occ_df = function(..., deparse.level=1) {
   dat$year = year(dat$eventDate)
   dat$month = month(dat$eventDate)
   dat$day = day(dat$eventDate)
+  
+  missing_vars = vars[which(!(vars %in% names(dat)))]
+  if(length(missing_vars) > 0) dat[, missing_vars] = NA
+  
   out = dat[, vars]
   names(out)[1:2] = c("lon", "lat")
   n = nrow(out)
@@ -257,6 +261,9 @@ rbind.occ_df = function(..., deparse.level=1) {
     
   }
 
+  missing_vars = vars[which(!(vars %in% names(dat)))]
+  if(length(missing_vars) > 0) dat[, missing_vars] = NA
+  
   out = dat[, vars]
   names(out)[1:2] = c("lon", "lat")
   n = nrow(out)
