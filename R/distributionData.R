@@ -83,6 +83,34 @@ rbind.occ_df = function(..., deparse.level=1) {
   return(out)
 }
 
+#' @export
+plot.occ_df = function(x, y=NULL, col="blue", xlim=NULL, ylim=NULL, domain="world", center=0, 
+                       hires=FALSE, land.col="darkolivegreen4", sea.col="aliceblue", 
+                       boundaries.col = "black", grid.col="white", grid=TRUE,
+                       cex=0.25, pch=19, main=NULL, add=FALSE, axes=TRUE, 
+                       border=!axes, asp=NA, axs="i", xaxs=axs, yaxs=axs, cex.axis=0.75, 
+                       interior=FALSE, fill=TRUE, countries=FALSE, nx=NULL, ny=nx, ...) {
+  
+  plot.map(x=x, y=y, xlim=xlim, ylim=ylim, domain=domain, center=center, 
+           hires=hires, land.col=land.col, sea.col=sea.col, 
+           boundaries.col = boundaries.col, grid.col=grid.col, grid=grid,
+           cex=cex, pch=pch, main=main, add=add, axes=axes, 
+           border=border, asp=asp, axs=axs, xaxs=axs, yaxs=axs, cex.axis=cex.axis, 
+           interior=interior, fill=fill, countries=countries, nx=nx, ny=ny, col=col, ...)
+  
+  return(invisible(NULL))
+  
+}
+
+#' @export
+points.occ_df = function(x, col="red", pch=19, cex=0.25, ...) {
+  
+  points(x=x$lon, y=x$lat, col=col, pch=pch, cex=cex, ...)
+  
+  return(invisible(NULL))
+  
+}
+
 # head.occ_df = function (x, n = 6L, ...) {
 #     # class(x) =  tail(class(x), -1)
 #     stopifnot(length(n) == 1L)
@@ -155,11 +183,12 @@ rbind.occ_df = function(..., deparse.level=1) {
   msg = sprintf("\nRetrieved %d records of %d (%0.2f%%)\n", 0, 0, 100)
   cat(msg)
     return(NULL)
-    }
-  dat$eventDate = as.Date(dat$eventDate)
-  dat$year = year(dat$eventDate)
-  dat$month = month(dat$eventDate)
-  dat$day = day(dat$eventDate)
+  }
+  
+  eventDate = parse_obis_date(dat$eventDate)
+  dat$year  = eventDate$year
+  dat$month = eventDate$month
+  dat$day   = eventDate$day
   
   missing_vars = vars[which(!(vars %in% names(dat)))]
   if(length(missing_vars) > 0) dat[, missing_vars] = NA
@@ -342,3 +371,29 @@ rbind.occ_df = function(..., deparse.level=1) {
 }
 
 
+# Internal functions ------------------------------------------------------
+
+
+parse_obis_date = function(x) {
+  
+  x[x=="0000-00-00"] = NA
+  x = substr(x, start=1, stop=10)
+  eventDate = suppressWarnings(lubridate::parse_date_time(x, "Ymd"))
+  
+  isna_day = which(is.na(eventDate) & !is.na(x))
+  xmiss = suppressWarnings(lubridate::parse_date_time(substr(x[isna_day], start=1, stop=7), "Ym"))
+  eventDate[isna_day] = xmiss
+  
+  isna_month = which(is.na(eventDate) & !is.na(x))
+  xmiss = suppressWarnings(lubridate::parse_date_time(substr(x[isna_month], start=1, stop=4), "Y"))
+  eventDate[isna_month] = xmiss
+  
+  year  = year(eventDate)
+  month = month(eventDate)
+  day   = day(eventDate)
+  day[isna_day] = NA
+  month[isna_month] = NA
+  
+  return(list(eventDate=eventDate, year=year, month=month, day=day))
+  
+}
