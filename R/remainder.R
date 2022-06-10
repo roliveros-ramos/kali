@@ -1232,6 +1232,7 @@ removeSector = function(x, coords, lon, lat) {
   return(out)
 }
 
+#' @export
 makeTransparent = function(..., alpha=0.5) {
   
   if(alpha<0 | alpha>1) stop("alpha must be between 0 and 1")
