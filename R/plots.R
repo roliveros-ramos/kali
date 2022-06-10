@@ -306,7 +306,7 @@ mapDetails = function(primeMeridian="center", hires=FALSE, col="black", interior
   return(invisible())
 }
 
-#' @export
+#' @export plot.domain
 plot.domain = function(domain=NA, xlim=NULL, ylim=NULL, col="red", lwd=1, fill=NA, ...) {
   
   if(is.null(xlim)) xlim = .getDomain(domain, "x")
