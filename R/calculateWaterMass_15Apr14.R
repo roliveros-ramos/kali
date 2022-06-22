@@ -3,7 +3,7 @@
 # # ATS  (2): Aguas Tropicales Superficiales
 # # AMSA (3): Aguas de Mezcla Subtropical-Antártica
 # # AES  (4): Aguas Ecuatoriales Superficiales
-# # ACF  (5): Aguas Costeras Fr�as
+# # ACF  (5): Aguas Costeras Frías
 # # ASS  (6): Aguas Subtropicales Superficiales
 # 
 # # INPUTS
