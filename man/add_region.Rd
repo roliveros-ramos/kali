@@ -34,3 +34,8 @@ Invisibly, the polygon to plot.
 \description{
 Add known areas to a map
 }
+\examples{
+plot.map("world")
+add_region(what="longhurst", col=1:4)
+add_region(what="longhurst", region="ETRA", col="red")
+}

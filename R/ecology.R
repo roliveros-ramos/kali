@@ -46,6 +46,10 @@ assign_region = function(data, what, longitude="lon", latitude="lat") {
 #'
 #' @return Invisibly, the polygon to plot.
 #' @export
+#' @examples
+#' plot.map("world")
+#' add_region(what="longhurst", col=1:4)
+#' add_region(what="longhurst", region="ETRA", col="red")
 add_region = function(what, region=NULL, subset=NULL, col="red", list=FALSE, plot=TRUE, ...) {
   
   layer = switch(what,
