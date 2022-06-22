@@ -16,7 +16,7 @@ getTolerance(x, what, split = NULL, ...)
 \item{...}{}
 }
 \value{
-
+The tolerance levels: absolute minimum and maximum and optimum range.
 }
 \description{
 Estimate Tolerance to an environmental factor

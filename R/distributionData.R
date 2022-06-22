@@ -8,7 +8,7 @@
 #' @param verbose boolean, do you want to know what's happening?
 #' @param ... May be used later
 #'
-#' @return
+#' @return A tibble with species ocurrences.
 #' @export
 #'
 #' @examples

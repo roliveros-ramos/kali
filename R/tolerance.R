@@ -25,10 +25,9 @@
 #' @param split 
 #' @param ... 
 #'
-#' @return
+#' @return The tolerance levels: absolute minimum and maximum and optimum range.
 #' @export
 #'
-#' @examples
 getTolerance = function(x, what, split=NULL, ...) {
   
   if(inherits(x, "tbl")) x = as.data.frame(x)

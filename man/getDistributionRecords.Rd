@@ -27,7 +27,7 @@ getDistributionRecords(
 \item{...}{May be used later}
 }
 \value{
-
+A tibble with species ocurrences.
 }
 \description{
 Get distribution records from on-line databases
