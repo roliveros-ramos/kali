@@ -41,7 +41,7 @@ assign_region = function(data, what, longitude="lon", latitude="lat") {
 #' @param subset The polygon within the database especified in 'what'.
 #' @param col The color of the polygons.
 #' @param ... Additional arguments to the plot function (currently not used)
-#' @param list Boolean, list the available areas in the dataset.
+#' @param list Boolean, list the available regions in the dataset.
 #' @param plot 
 #'
 #' @return Invisibly, the polygon to plot.

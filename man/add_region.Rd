@@ -22,7 +22,7 @@ Currently, only "longhurst", "LME", "FAO" and "GFMC" are accepted.}
 
 \item{col}{The color of the polygons.}
 
-\item{list}{Boolean, list the available areas in the dataset.}
+\item{list}{Boolean, list the available regions in the dataset.}
 
 \item{plot}{}
 
