@@ -50,7 +50,7 @@ assign_region = function(data, what, longitude="lon", latitude="lat") {
 #' plot.map("world")
 #' add_region(what="longhurst", col=1:4)
 #' add_region(what="longhurst", region="ETRA", col="red")
-add_region = function(what, region=NULL, subset=NULL, col="red", list=FALSE, plot=TRUE, ...) {
+add_region = function(what, region=NULL, subset=NULL, col=NULL, list=FALSE, plot=TRUE, ...) {
   
   layer = switch(what,
                  longhurst = longhurst,
@@ -62,12 +62,14 @@ add_region = function(what, region=NULL, subset=NULL, col="red", list=FALSE, plo
   if(isTRUE(list)) return(layer@data)
   
   if(is.null(region)) {
-    plot(x=layer, col=col, border=col, add=TRUE)
+    if(is.null(col)) col="black"
+    plot(x=layer, col=NA, border=col, add=TRUE)
     return(invisible(layer))
   }
   
+  if(is.null(col)) col="red"
   ind = which(layer@data[, "region"] %in% region)
-  plot(layer[ind, ], col=col, border=col, add=TRUE)
+  plot(layer[ind, ], col=col, border=NA, add=TRUE)
   
   return(invisible(layer[ind, ]))
   

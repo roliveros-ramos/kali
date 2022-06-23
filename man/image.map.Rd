@@ -4,7 +4,7 @@
 \alias{image.map}
 \title{Nice image plots for maps}
 \usage{
-image.map(
+\method{image}{map}(
   lon,
   lat,
   z,

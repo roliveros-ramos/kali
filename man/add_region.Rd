@@ -8,7 +8,7 @@ add_region(
   what,
   region = NULL,
   subset = NULL,
-  col = "red",
+  col = NULL,
   list = FALSE,
   plot = TRUE,
   ...
