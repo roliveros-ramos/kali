@@ -250,9 +250,33 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
 
 # mapDetails --------------------------------------------------------------
 
-mapDetails = function(primeMeridian="center", hires=FALSE, col="black", interior=FALSE, 
-                      axes=TRUE, border=TRUE, boundaries.col="black",
-                      grid=TRUE, grid.col="white", cex.axis=0.75, fill=TRUE, 
+#' Add map details to a plot.
+#'
+#' @param primeMeridian 
+#' @param hires 
+#' @param col 
+#' @param interior 
+#' @param axes 
+#' @param border 
+#' @param boundaries.col 
+#' @param grid 
+#' @param grid.col 
+#' @param cex.axis 
+#' @param fill 
+#' @param boundary 
+#' @param water 
+#' @param countries 
+#' @param nx 
+#' @param ny 
+#' @param labels 
+#' @param ... 
+#'
+#' @return Nothing, used for side effect of adding map details to a plot.
+#' @export
+#'
+mapDetails = function(primeMeridian="center", hires=FALSE, col="darkolivegreen4", 
+                      interior=FALSE, axes=FALSE, border=FALSE, boundaries.col="black",
+                      grid=FALSE, grid.col="white", cex.axis=0.75, fill=TRUE, 
                       boundary = TRUE, water=NULL, countries=FALSE, nx, ny, labels=TRUE, ...) {
   
   primeMeridian = match.arg(primeMeridian, choices=c("center", "left"))

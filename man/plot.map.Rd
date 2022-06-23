@@ -4,7 +4,7 @@
 \alias{plot.map}
 \title{Nice scatter plots for georeferenced data}
 \usage{
-\method{plot}{map}(
+plot.map(
   x,
   y = NULL,
   xlim = NULL,
