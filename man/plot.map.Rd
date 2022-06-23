@@ -22,6 +22,7 @@ plot.map(
   main = NULL,
   add = FALSE,
   axes = TRUE,
+  land = TRUE,
   border = !axes,
   asp = NA,
   axs = "i",
@@ -45,8 +46,6 @@ and 'lat'}
 \item{xlim}{}
 
 \item{ylim}{}
-
-\item{domain}{}
 
 \item{center}{}
 
@@ -72,6 +71,8 @@ and 'lat'}
 
 \item{axes}{}
 
+\item{land}{}
+
 \item{border}{}
 
 \item{asp}{}
@@ -89,6 +90,10 @@ and 'lat'}
 \item{fill}{}
 
 \item{countries}{}
+
+\item{nx}{}
+
+\item{ny}{}
 
 \item{...}{}
 }

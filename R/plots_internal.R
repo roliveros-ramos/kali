@@ -14,7 +14,7 @@
   
   pm = .findPrimeMeridian(lon)
   
-  mapDetails(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
+  map_details(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
              axes=axes, border=border, boundaries.col=boundaries.col,
              grid=grid, grid.col=grid.col, water=sea.col)  
   

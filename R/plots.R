@@ -68,7 +68,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
     if (!info$poly.grid) {
       image(x=lon, y=lat, z=z, add = add, col = col, axes=FALSE, 
             xlab="", ylab="", ...)
-      mapDetails(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
+      map_details(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
                  axes=axes, border=border, boundaries.col=boundaries.col,
                  grid=grid, grid.col=grid.col, water=sea.col, labels=labels)    
     }
@@ -76,7 +76,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
       poly.image(x=lon, y=lat, z=z, add = add, col = col, midpoint = midpoint, 
                  border = border, lwd.poly = lwd, axes=FALSE, 
                  xlab="", ylab="",...)
-      mapDetails(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
+      map_details(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
                  axes=axes, border=border, boundaries.col=boundaries.col,
                  grid=grid, grid.col=grid.col, water=sea.col, labels=labels)  
     }
@@ -163,6 +163,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
 #' @param y vector of latitude values.
 #' @param xlim 
 #' @param ylim 
+#' @param domain
 #' @param center 
 #' @param hires 
 #' @param land.col 
@@ -175,6 +176,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
 #' @param main 
 #' @param add 
 #' @param axes 
+#' @param land 
 #' @param border 
 #' @param asp 
 #' @param axs 
@@ -184,8 +186,9 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
 #' @param interior 
 #' @param fill 
 #' @param countries 
+#' @param nx 
+#' @param ny 
 #' @param ... 
-#' @param domain
 #'
 #' @author Ricardo Oliveros-Ramos
 #' @examples
@@ -196,7 +199,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
 plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0, 
                     hires=FALSE, land.col="darkolivegreen4", sea.col="aliceblue", 
                     boundaries.col = "black", grid.col="white", grid=TRUE,
-                    cex=0.5, pch=19, main=NULL, add=FALSE, axes=TRUE, 
+                    cex=0.5, pch=19, main=NULL, add=FALSE, axes=TRUE, land=TRUE,
                     border=!axes, asp=NA, axs="i", xaxs=axs, yaxs=axs, cex.axis=0.75, 
                     interior=FALSE, fill=TRUE, countries=FALSE, nx=NULL, ny=nx, ...) {
   
@@ -236,10 +239,10 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
     plot.new()
     plot.window(xlim=xlim, ylim=ylim, xaxs=xaxs, yaxs=yaxs, asp=asp)
     .plotSea(col=sea.col)
-    mapDetails(primeMeridian=pm, hires=hires, col=land.col, interior=interior, 
+    map_details(primeMeridian=pm, hires=hires, col=land.col, interior=interior, 
                axes=axes, border=border, boundaries.col=boundaries.col,
                grid=grid, grid.col=grid.col, cex.axis=cex.axis, fill=fill, 
-               water=sea.col, countries=countries, nx=nx, ny=ny)    
+               water=sea.col, land=land, countries=countries, nx=nx, ny=ny)    
     title(main=main)
   }
   points(xy, cex=cex, pch=pch, ...)
@@ -274,10 +277,10 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
 #' @return Nothing, used for side effect of adding map details to a plot.
 #' @export
 #'
-mapDetails = function(primeMeridian="center", hires=FALSE, col="darkolivegreen4", 
+map_details = function(primeMeridian="center", hires=FALSE, col="darkolivegreen4", 
                       interior=FALSE, axes=FALSE, border=FALSE, boundaries.col="black",
                       grid=FALSE, grid.col="white", cex.axis=0.75, fill=TRUE, 
-                      boundary = TRUE, water=NULL, countries=FALSE, nx, ny, labels=TRUE, ...) {
+                      boundary = TRUE, water=NULL, land=TRUE, countries=FALSE, nx, ny, labels=TRUE, ...) {
   
   primeMeridian = match.arg(primeMeridian, choices=c("center", "left"))
   
@@ -300,23 +303,23 @@ mapDetails = function(primeMeridian="center", hires=FALSE, col="darkolivegreen4"
   
   if(isTRUE(grid)) grid(nx=nx, ny=ny, col=grid.col, lty=1)
   
-  map(database=mapa, fill = fill, col = col, add = TRUE, interior=FALSE, 
-      border=col, boundary = boundary, ...)
-  
-  if(!is.null(water)) {
-    if(primeMeridian=="center") {
-      map("lakes", fill = TRUE, col = water, add = TRUE, border=water, ...)
-    } else {
-      lakes = map("lakes", plot=FALSE)
-      lakes$x = checkLongitude(lakes$x, primeMeridian = "left")
-      map(lakes, fill = TRUE, col = water, add = TRUE, border=water, ...)
+  if(isTRUE(land)) {
+    map(database=mapa, fill = fill, col = col, add = TRUE, interior=FALSE, 
+        border=col, boundary = boundary, ...)
+    
+    if(!is.null(water)) {
+      if(primeMeridian=="center") {
+        map("lakes", fill = TRUE, col = water, add = TRUE, border=water, ...)
+      } else {
+        lakes = map("lakes", plot=FALSE)
+        lakes$x = checkLongitude(lakes$x, primeMeridian = "left")
+        map(lakes, fill = TRUE, col = water, add = TRUE, border=water, ...)
+      }
     }
+    if(isTRUE(countries)) 
+      map(database=mapa, fill = FALSE, col = boundaries.col, add = TRUE)
   }
-  
-  if(isTRUE(countries)) 
-    map(database=mapa, fill = FALSE, col = boundaries.col, add = TRUE)
-  
-  
+
   if(axes) {
     map.axes2(cex.axis=cex.axis)
     if(isTRUE(labels)) {
