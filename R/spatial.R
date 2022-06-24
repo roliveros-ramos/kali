@@ -26,24 +26,3 @@ checkLongitude = function(x, primeMeridian="center", ...) {
   if(any(x>180)) return("left")
   return("center")
 }
-
-
-validPoints = function(lon, lat, land=FALSE) {
-  
-  coords = cbind(lon=lon, lat=lat)
-  xind = which(complete.cases(coords))
-  coords = coords[xind, ]
-  
-  land = map(database="worldHires", fill=TRUE)
-  land = map2SpatialPolygons(land, 
-                             IDs=sapply(strsplit(land$names, ":"), FUN="[", i=1), 
-                             proj4string=CRS("+proj=longlat"))
-  sets = SpatialPoints(cbind(lon=coords[, "lon"], lat=coords[, "lat"]), 
-                       proj4string=CRS("+proj=longlat"))
-  ind = is.na(over(sets, land))
-  
-  if(isTRUE(land)) ind = !ind
-  ind = xind[which(ind)]
-  
-  return(ind)
-}
