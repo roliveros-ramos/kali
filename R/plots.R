@@ -5,12 +5,44 @@
 #' @title Nice image plots for maps
 #' @description This function plots an image for a georeferenced matrix, 
 #' assuming x and y axes are longitude and latitude.  
+#'
 #' @param lon vector or matrix of longitude values, following the conventions
 #' of \code{image}.
 #' @param lat vector or matrix of latitude values, following the conventions
 #' of \code{image}.
 #' @param z matrix of values, following the conventions of \code{image}.
-#' @param \dots Additional parameters to be passed to \code{image.plot}.
+#' @param center 
+#' @param legend 
+#' @param hires 
+#' @param add 
+#' @param nlevel 
+#' @param horizontal 
+#' @param legend.shrink 
+#' @param legend.width 
+#' @param slice 
+#' @param legend.mar 
+#' @param legend.lab 
+#' @param graphics.reset 
+#' @param bigplot 
+#' @param smallplot 
+#' @param legend.only 
+#' @param col 
+#' @param lab.breaks 
+#' @param axis.args 
+#' @param legend.args 
+#' @param axes 
+#' @param midpoint 
+#' @param border 
+#' @param lwd 
+#' @param land 
+#' @param land.col 
+#' @param labels 
+#' @param sea.col 
+#' @param boundaries.col 
+#' @param grid 
+#' @param grid.col 
+#' @param ... 
+#'
 #' @author Ricardo Oliveros-Ramos, modified from xxx's \code{image.plot} from 
 #' the fields package
 #' @examples
@@ -23,8 +55,8 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
                       bigplot = NULL, smallplot = NULL, legend.only = FALSE, 
                       col = rev(rainbow(nlevel/10, start = 0/6, end = 4/6)), 
                       lab.breaks = NULL, axis.args = NULL, legend.args = NULL, axes=TRUE,
-                      midpoint = FALSE, border = TRUE, lwd = 1, land.col="black", labels = TRUE,
-                      sea.col="white", boundaries.col="grey", grid=FALSE, grid.col="white", ...) {
+                      midpoint = FALSE, border = TRUE, lwd = 1, land=TRUE, land.col="black", labels = TRUE,
+                      sea.col="white", boundaries.col="grey", grid=FALSE, grid.col="white", grid.lwd=0.5, ...) {
   
   if(!is.null(attr(z, "longitude"))) lon = attr(z, "lon")
   if(!is.null(attr(z, "latitude"))) lat = attr(z, "lat")
@@ -36,12 +68,15 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
   
   if(length(dim(z))>3) stop("Only arrays of 3-dimensions are supported.")
   
+  nx = nrow(z)
+  ny = ncol(z)
+  
   pm = .findPrimeMeridian(lon)
   
   if(!isTRUE(legend)) {
-    .image.mapnl(lon=lon, lat=lat, z=z, center=center, hires=hires, add=add, nlevel=nlevel, 
-                 col=col, land.col=land.col, sea.col=sea.col, boundaries.col=boundaries.col, 
-                 grid.col=grid.col, grid=grid, axes=axes, border=border, ...)
+    .image.mapnl(lon=lon, lat=lat, z=z, center=center, hires=hires, add=add, nlevel=nlevel,
+                 col=col, land=land, land.col=land.col, sea.col=sea.col, boundaries.col=boundaries.col, 
+                 grid.col=grid.col, grid=grid, axes=axes, border=border, labels=labels, grid.lwd=grid.lwd, ...)
     return(invisible())
   }
   
@@ -69,16 +104,16 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
       image(x=lon, y=lat, z=z, add = add, col = col, axes=FALSE, 
             xlab="", ylab="", ...)
       map_details(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
-                 axes=axes, border=border, boundaries.col=boundaries.col,
-                 grid=grid, grid.col=grid.col, water=sea.col, labels=labels)    
+                 axes=axes, border=border, boundaries.col=boundaries.col, nx=nx, ny=ny,
+                 grid=grid, grid.col=grid.col, water=sea.col, land=land, grid.lwd=grid.lwd, labels=labels)    
     }
     else {
       poly.image(x=lon, y=lat, z=z, add = add, col = col, midpoint = midpoint, 
                  border = border, lwd.poly = lwd, axes=FALSE, 
                  xlab="", ylab="",...)
       map_details(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
-                 axes=axes, border=border, boundaries.col=boundaries.col,
-                 grid=grid, grid.col=grid.col, water=sea.col, labels=labels)  
+                 axes=axes, border=border, boundaries.col=boundaries.col, nx=nx, ny=ny,
+                 grid=grid, grid.col=grid.col, water=sea.col, land=land, grid.lwd=grid.lwd, labels=labels)  
     }
     big.par = par(no.readonly = TRUE)
   }
@@ -198,7 +233,7 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
 #' @export plot.map
 plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0, 
                     hires=FALSE, land.col="darkolivegreen4", sea.col="aliceblue", 
-                    boundaries.col = "black", grid.col="white", grid=TRUE,
+                    boundaries.col = "black", grid.col="white", grid=TRUE, grid.lwd=0.5,  
                     cex=0.5, pch=19, main=NULL, add=FALSE, axes=TRUE, land=TRUE,
                     border=!axes, asp=NA, axs="i", xaxs=axs, yaxs=axs, cex.axis=0.75, 
                     interior=FALSE, fill=TRUE, countries=FALSE, nx=NULL, ny=nx, ...) {
@@ -241,7 +276,7 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
     .plotSea(col=sea.col)
     map_details(primeMeridian=pm, hires=hires, col=land.col, interior=interior, 
                axes=axes, border=border, boundaries.col=boundaries.col,
-               grid=grid, grid.col=grid.col, cex.axis=cex.axis, fill=fill, 
+               grid=grid, grid.col=grid.col, grid.lwd=grid.lwd, cex.axis=cex.axis, fill=fill, 
                water=sea.col, land=land, countries=countries, nx=nx, ny=ny)    
     title(main=main)
   }
@@ -279,8 +314,8 @@ plot.map = function(x, y=NULL, xlim=NULL, ylim=NULL, domain=NULL, center=0,
 #'
 map_details = function(primeMeridian="center", hires=FALSE, col="darkolivegreen4", 
                       interior=FALSE, axes=FALSE, border=FALSE, boundaries.col="black",
-                      grid=FALSE, grid.col="white", cex.axis=0.75, fill=TRUE, 
-                      boundary = TRUE, water=NULL, land=TRUE, countries=FALSE, nx, ny, labels=TRUE, ...) {
+                      grid=FALSE, grid.col="white", grid.lwd=0.5, cex.axis=0.75, fill=TRUE, 
+                      boundary = TRUE, water=NULL, land=TRUE, countries=FALSE, nx=NULL, ny=nx, labels=TRUE, ...) {
   
   primeMeridian = match.arg(primeMeridian, choices=c("center", "left"))
   
@@ -301,11 +336,16 @@ map_details = function(primeMeridian="center", hires=FALSE, col="darkolivegreen4
   
   wrap = ifelse(primeMeridian=="center", c(-180,180), c(0,360))
   
-  if(isTRUE(grid)) grid(nx=nx, ny=ny, col=grid.col, lty=1)
+  if(isTRUE(grid)) grid(nx=nx, ny=ny, col=grid.col, lty=1, lwd=grid.lwd)
   
   if(isTRUE(land)) {
-    map(database=mapa, fill = fill, col = col, add = TRUE, interior=FALSE, 
-        border=col, boundary = boundary, ...)
+    if(isTRUE(fill)) {
+      map(database=mapa, fill = TRUE, col = col, add = TRUE, interior=FALSE, 
+          border=col, boundary = boundary, ...)
+    } else {
+      map(database=mapa, fill = FALSE, col = col, add = TRUE, interior=FALSE, 
+          boundary = boundary, ...)
+    }
     
     if(!is.null(water)) {
       if(primeMeridian=="center") {

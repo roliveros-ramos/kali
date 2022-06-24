@@ -14,14 +14,15 @@ map_details(
   boundaries.col = "black",
   grid = FALSE,
   grid.col = "white",
+  grid.lwd = 0.5,
   cex.axis = 0.75,
   fill = TRUE,
   boundary = TRUE,
   water = NULL,
   land = TRUE,
   countries = FALSE,
-  nx,
-  ny,
+  nx = NULL,
+  ny = nx,
   labels = TRUE,
   ...
 )

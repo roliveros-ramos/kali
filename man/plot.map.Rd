@@ -17,6 +17,7 @@ plot.map(
   boundaries.col = "black",
   grid.col = "white",
   grid = TRUE,
+  grid.lwd = 0.5,
   cex = 0.5,
   pch = 19,
   main = NULL,

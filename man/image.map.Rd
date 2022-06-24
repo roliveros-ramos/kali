@@ -31,12 +31,14 @@
   midpoint = FALSE,
   border = TRUE,
   lwd = 1,
+  land = TRUE,
   land.col = "black",
   labels = TRUE,
   sea.col = "white",
   boundaries.col = "grey",
   grid = FALSE,
   grid.col = "white",
+  grid.lwd = 0.5,
   ...
 )
 }
@@ -49,7 +51,67 @@ of \code{image}.}
 
 \item{z}{matrix of values, following the conventions of \code{image}.}
 
-\item{\dots}{Additional parameters to be passed to \code{image.plot}.}
+\item{center}{}
+
+\item{legend}{}
+
+\item{hires}{}
+
+\item{add}{}
+
+\item{nlevel}{}
+
+\item{horizontal}{}
+
+\item{legend.shrink}{}
+
+\item{legend.width}{}
+
+\item{slice}{}
+
+\item{legend.mar}{}
+
+\item{legend.lab}{}
+
+\item{graphics.reset}{}
+
+\item{bigplot}{}
+
+\item{smallplot}{}
+
+\item{legend.only}{}
+
+\item{col}{}
+
+\item{lab.breaks}{}
+
+\item{axis.args}{}
+
+\item{legend.args}{}
+
+\item{axes}{}
+
+\item{midpoint}{}
+
+\item{border}{}
+
+\item{lwd}{}
+
+\item{land}{}
+
+\item{land.col}{}
+
+\item{labels}{}
+
+\item{sea.col}{}
+
+\item{boundaries.col}{}
+
+\item{grid}{}
+
+\item{grid.col}{}
+
+\item{...}{}
 }
 \description{
 This function plots an image for a georeferenced matrix, 

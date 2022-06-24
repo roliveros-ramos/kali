@@ -1,22 +1,16 @@
 
 .image.mapnl = function(lon, lat, z, center=0, hires=FALSE, add = FALSE, nlevel=1000, 
-                        col = rev(rainbow(nlevel/10, start = 0/6, end = 4/6)),
+                        col = rev(rainbow(nlevel/10, start = 0/6, end = 4/6)), land=TRUE,
                         land.col="darkolivegreen4", sea.col="aliceblue", boundaries.col = "black", 
-                        grid.col="white", grid=FALSE, axes=TRUE, border=!axes, ...) {
-  
-  # lonData = .checkLongitude(lon)
-  # if(!is.null(lonData$ind)) {
-  #   z = z[lonData$ind, ]
-  #   lon = lonData$lon
-  # }
+                        grid.col="white", grid.lwd=0.5, grid=FALSE, axes=TRUE, border=!axes, labels=TRUE, ...) {
   
   image(x=lon, y=lat, z=z, col=col, axes=FALSE, add=add, xlab="", ylab="", ...)
   
   pm = .findPrimeMeridian(lon)
   
   map_details(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
-             axes=axes, border=border, boundaries.col=boundaries.col,
-             grid=grid, grid.col=grid.col, water=sea.col)  
+             axes=axes, border=border, boundaries.col=boundaries.col, nx=nrow(z), ny=ncol(z),
+             grid=grid, grid.col=grid.col, grid.lwd=grid.lwd, water=sea.col, land=land, labels=labels)  
   
   return(invisible())
 }
