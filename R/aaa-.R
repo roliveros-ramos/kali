@@ -16,7 +16,7 @@ NULL
 NULL
 #' @importMethodsFrom sp plot
 NULL
-#' @importFrom sp SpatialPoints over
+#' @importFrom sp SpatialPoints over CRS proj4string
 NULL
 #' @importFrom fields poly.image image.plot interp.surface.grid tim.colors
 #' imageplot.info imageplot.setup
