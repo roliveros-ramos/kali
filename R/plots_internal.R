@@ -1,16 +1,26 @@
 
-.image.mapnl = function(lon, lat, z, center=0, hires=FALSE, add = FALSE, nlevel=1000, 
+.image.mapnl = function(lon, lat, z, zlim, center=0, hires=FALSE, add = FALSE, nlevel=1000, 
                         col = rev(rainbow(nlevel/10, start = 0/6, end = 4/6)), land=TRUE,
                         land.col="darkolivegreen4", sea.col="aliceblue", boundaries.col = "black", 
                         grid.col="white", grid.lwd=0.5, grid=FALSE, axes=TRUE, border=!axes, labels=TRUE, ...) {
+
+  pm = .findPrimeMeridian(as.numeric(lon))
   
-  image(x=lon, y=lat, z=z, col=col, axes=FALSE, add=add, xlab="", ylab="", ...)
+  if(is.matrix(lon) & is.matrix(lat)) {
+    poly.image(x=lon, y=lat, z=z, zlim=zlim, col=col, axes=FALSE, add=add, xlab="", ylab="", ...)
+    map_details(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
+                axes=axes, border=border, boundaries.col=boundaries.col, nx=nrow(z), ny=ncol(z),
+                grid=FALSE, grid.col=grid.col, grid.lwd=grid.lwd, water=sea.col, land=land, labels=labels)  
+  } else {
+    image(x=lon, y=lat, z=z, zlim=zlim, col=col, axes=FALSE, add=add, xlab="", ylab="", ...)
+    map_details(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
+                axes=axes, border=border, boundaries.col=boundaries.col, nx=nrow(z), ny=ncol(z),
+                grid=grid, grid.col=grid.col, grid.lwd=grid.lwd, water=sea.col, land=land, labels=labels)  
+    
+  }
+
+
   
-  pm = .findPrimeMeridian(lon)
-  
-  map_details(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
-             axes=axes, border=border, boundaries.col=boundaries.col, nx=nrow(z), ny=ncol(z),
-             grid=grid, grid.col=grid.col, grid.lwd=grid.lwd, water=sea.col, land=land, labels=labels)  
   
   return(invisible())
 }

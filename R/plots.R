@@ -49,7 +49,7 @@
 #' load(anchovy)
 #' image.map(lon=anchovy$lon, lat=anchovy$lat, z=anchovy$z)
 #' @export image.map
-image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FALSE, nlevel = 1000, horizontal = FALSE, 
+image.map = function (lon, lat, z, zlim=NULL, center=0, legend=TRUE, hires=FALSE, add = FALSE, nlevel = 1000, horizontal = FALSE, 
                       legend.shrink = 0.9, legend.width = 1.2, slice=NULL,
                       legend.mar = ifelse(horizontal, 3.1, 5.1), legend.lab = NULL, graphics.reset = FALSE, 
                       bigplot = NULL, smallplot = NULL, legend.only = FALSE, 
@@ -60,9 +60,13 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
   
   if(!is.null(attr(z, "longitude"))) lon = attr(z, "lon")
   if(!is.null(attr(z, "latitude"))) lat = attr(z, "lat")
-    
+
+  if(is.null(zlim)) zlim = range(as.numeric(z), na.rm=TRUE)
+  
   if(length(dim(z))==3) {
-    if(!is.null(slice)) z = z[, , slice]
+    if(!is.null(slice)) {
+      z = z[, , slice]
+    }
     if(is.null(slice)) stop("Must specify an slice for plotting arrays.")
   }
   
@@ -74,14 +78,14 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
   pm = .findPrimeMeridian(lon)
   
   if(!isTRUE(legend)) {
-    .image.mapnl(lon=lon, lat=lat, z=z, center=center, hires=hires, add=add, nlevel=nlevel,
+    .image.mapnl(lon=lon, lat=lat, z=z, zlim=zlim, center=center, hires=hires, add=add, nlevel=nlevel,
                  col=col, land=land, land.col=land.col, sea.col=sea.col, boundaries.col=boundaries.col, 
                  grid.col=grid.col, grid=grid, axes=axes, border=border, labels=labels, grid.lwd=grid.lwd, ...)
     return(invisible())
   }
   
   old.par = par(no.readonly = TRUE)
-  info = imageplot.info(x=lon, y=lat, z=z, ...)
+  info = imageplot.info(x=lon, y=lat, z=z, zlim=zlim, ...)
   if (add) {
     big.plot = old.par$plt
   }
@@ -102,14 +106,14 @@ image.map = function (lon, lat, z, center=0, legend=TRUE, hires=FALSE, add = FAL
     }
     if (!info$poly.grid) {
       image(x=lon, y=lat, z=z, add = add, col = col, axes=FALSE, 
-            xlab="", ylab="", ...)
+            xlab="", ylab="", zlim=zlim, ...)
       map_details(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
                  axes=axes, border=border, boundaries.col=boundaries.col, nx=nx, ny=ny,
                  grid=grid, grid.col=grid.col, water=sea.col, land=land, grid.lwd=grid.lwd, labels=labels)    
     }
     else {
       poly.image(x=lon, y=lat, z=z, add = add, col = col, midpoint = midpoint, 
-                 border = border, lwd.poly = lwd, axes=FALSE, 
+                 border = NA, lwd.poly = lwd, axes=FALSE, zlim=zlim,
                  xlab="", ylab="",...)
       map_details(primeMeridian=pm, hires=hires,col=land.col, interior=FALSE, 
                  axes=axes, border=border, boundaries.col=boundaries.col, nx=nx, ny=ny,

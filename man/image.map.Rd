@@ -8,6 +8,7 @@
   lon,
   lat,
   z,
+  zlim = NULL,
   center = 0,
   legend = TRUE,
   hires = FALSE,
