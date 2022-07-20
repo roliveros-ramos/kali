@@ -23,7 +23,7 @@ NULL
 NULL
 #' @importFrom akima interp  interpp
 NULL
-#' @importFrom lubridate yday<- year month ymd leap_year
+#' @importFrom lubridate yday<- year month day ymd leap_year
 NULL
 #' @importFrom maptools map2SpatialPolygons
 NULL
