@@ -83,7 +83,7 @@ rbind.occ_df = function(..., deparse.level=1) {
   return(out)
 }
 
-#' @export
+#' @exportS3Method plot occ_df
 plot.occ_df = function(x, y=NULL, col="blue", xlim=NULL, ylim=NULL, domain="world", center=0, 
                        hires=FALSE, land.col="darkolivegreen4", sea.col="aliceblue", 
                        boundaries.col = "black", grid.col="white", grid=TRUE,
