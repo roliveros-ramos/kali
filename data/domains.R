@@ -1,6 +1,7 @@
 domains = NULL
 # domains$name = list(x=c(lonWest, lonEast), y=c(latSouth, latNorth))
 domains$world  = list(x=c(-180,+180),  y=c(-90, +90))
+domains$world2  = list(x=c(0, 360),  y=c(-90, +90))
 # America
 domains$peru      = list(x=c(-90,-70),   y=c(-20,0)) 
 domains$peru2     = list(x=c(-88,-70),   y=c(-20,-2))
@@ -24,6 +25,4 @@ domains$medsea = domains$mediterranean_sea
 
 # OSMOSE domains 
 domains$ben = domains$southern_benguela
-
-
-
+domains$gol = list(x=c(2.5,8.5), ylim=c(40.5,44.5))
