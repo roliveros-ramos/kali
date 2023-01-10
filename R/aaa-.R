@@ -27,6 +27,8 @@ NULL
 NULL
 #' @importFrom maptools map2SpatialPolygons
 NULL
+#' @importFrom tibble as_tibble tibble
+NULL
 
 
 
