@@ -1,4 +1,5 @@
 
+#' @export
 check_taxon = function(x, na.return=FALSE, verbose=TRUE) {
   
   if(!requireNamespace("taxize", quietly = TRUE)) 
@@ -23,7 +24,7 @@ check_taxon = function(x, na.return=FALSE, verbose=TRUE) {
       }
     }
     id = identical(x, tmp)
-    if(!id & !isNA & isTRUE(verbose)) message(sprintf("Species '%s' was corrected to '%s'.", x, tmp))
+    if(!id & !isNA & isTRUE(verbose)) message(sprintf("Taxon '%s' was corrected to '%s'.", x, tmp))
     return(tmp)
   }
   
@@ -42,6 +43,7 @@ check_taxon = function(x, na.return=FALSE, verbose=TRUE) {
   return(out)
 }
 
+#' @export
 get_taxon = function(x, rank, db="itis") {
   
   if(!requireNamespace("taxize", quietly = TRUE)) 
@@ -55,7 +57,7 @@ get_taxon = function(x, rank, db="itis") {
   db = match.arg(db, c("itis", "ncbi", "both"))
   isna = is.na(x)
   xna = unique(x[!isna])
-  tmp = taxize::tax_name(query=xna, db=db, get=rank, messages=FALSE, ask=FALSE)[, rank]
+  tmp = taxize::tax_name(sci=xna, db=db, get=rank, messages=FALSE, ask=FALSE)[, rank]
   xind = which(is.na(tmp) & .is_binomial(xna))
   if(length(xind)>0) {
     last_x = .get_first(xna[xind])
@@ -68,6 +70,18 @@ get_taxon = function(x, rank, db="itis") {
   
 }
 
+#' @export
+get_classification = function(x) {
+  x = check_taxon(x, verbose=FALSE)
+  taxa = c('kingdom', 'subkingdom', 'infrakingdom', 'phylum', 'subphylum', 
+           'infraphylum', 'superclass', 'class', 'superorder', 'order', 'suborder', 
+           'family', 'subfamily', 'genus', 'species')
+  out = setNames(rep(NA, length(taxa)), nm=taxa)
+  x = taxize::classification(x, db="itis", messages=FALSE, ask=FALSE)[[1]]
+  out[x$rank] = x$name
+  out = as.list(out)
+  return(out)
+}
 
 # Internal ----------------------------------------------------------------
 
