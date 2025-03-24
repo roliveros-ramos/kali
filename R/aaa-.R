@@ -25,8 +25,6 @@ NULL
 NULL
 #' @importFrom lubridate yday<- year month day ymd leap_year
 NULL
-#' @importFrom maptools map2SpatialPolygons
-NULL
 #' @importFrom tibble as_tibble tibble
 NULL
 

@@ -1,8 +1,8 @@
 Package: kali
 Type: Package
 Title: Tools for habitat and niche modeling
-Version: 0.0.6.9004
-Date: 2022-06-23
+Version: 0.0.6.9005
+Date: 2025-03-24
 Author: Ricardo Oliveros-Ramos
 Maintainer: Ricardo Oliveros-Ramos <ricardo.oliveros@gmail.com>
 Description: Tools for habitat and niche modeling prediction and analysis.
@@ -27,4 +27,4 @@ Suggests: mapdata, animation, ncdf4
 Encoding: UTF-8
 ByteCompile: TRUE
 LazyData: TRUE
-RoxygenNote: 7.2.1
+RoxygenNote: 7.3.2
